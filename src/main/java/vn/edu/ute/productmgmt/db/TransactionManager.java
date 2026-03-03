@@ -21,4 +21,7 @@ public class TransactionManager {
             em.close();
         }
     }
+
+    public void execute(Object o) {
+    }
 }
