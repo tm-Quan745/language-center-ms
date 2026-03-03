@@ -24,6 +24,17 @@ public class UserAccount {
     @Column(name = "related_id") // TeacherID / StudentID / StaffID - lưu UUID dạng string hoặc ref
     private String relatedId;
 
+    @Column(name = "active", nullable = false)
+    private boolean active = true;
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
     public UserAccount() {
     }
 

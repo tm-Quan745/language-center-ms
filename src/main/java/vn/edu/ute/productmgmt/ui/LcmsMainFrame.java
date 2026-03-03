@@ -1,13 +1,19 @@
 package vn.edu.ute.productmgmt.ui;
 
+import vn.edu.ute.productmgmt.db.TransactionManager;
+import vn.edu.ute.productmgmt.model.UserAccount;
+import vn.edu.ute.productmgmt.repo.UserAccountRepository;
+import vn.edu.ute.productmgmt.repo.jpa.UserAccountRepositoryImpl;
+import vn.edu.ute.productmgmt.service.AuthService;
+
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * Demo UI cho hệ thống Language Center Management dùng mock data,
- * layout kiểu dashboard: top bar + sidebar + vùng nội dung (CardLayout).
- */
 public class LcmsMainFrame extends JFrame {
+
+    private final UserAccount currentUser;
 
     private final StudentPanel studentPanel = new StudentPanel();
     private final TeacherPanel teacherPanel = new TeacherPanel();
@@ -20,15 +26,21 @@ public class LcmsMainFrame extends JFrame {
     private final RoomPanel roomPanel = new RoomPanel();
     private final ResultPanel resultPanel = new ResultPanel();
     private final InvoicePanel invoicePanel = new InvoicePanel();
-    private final StaffPanel staffPanel = new StaffPanel();
+    private final LcmsStaffPanel staffPanel = new LcmsStaffPanel();
     private final UserAccountPanel userAccountPanel = new UserAccountPanel();
 
     private final JPanel contentPanel = new JPanel(new CardLayout());
+    private JList<String> menuList;
 
-    public LcmsMainFrame() {
-        super("Language Center Management (Demo UI)");
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+    private final List<String> menuItems = new ArrayList<>();
+
+    public LcmsMainFrame(UserAccount user) {
+        super("Language Center Management");
+        this.currentUser = user;
+
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
         buildUI();
+        applyAuthorization(); // 🔥 phân quyền
         setSize(1200, 700);
         setLocationRelativeTo(null);
     }
@@ -43,6 +55,7 @@ public class LcmsMainFrame extends JFrame {
         setContentPane(root);
     }
 
+    // ===== TOP BAR =====
     private JComponent createTopBar() {
         JPanel top = new JPanel(new BorderLayout());
         top.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
@@ -50,47 +63,39 @@ public class LcmsMainFrame extends JFrame {
         JLabel title = new JLabel("LCMS - Language Center Management");
         title.setFont(title.getFont().deriveFont(Font.BOLD, 16f));
 
-        JLabel userInfo = new JLabel("Xin chào: Admin");
+        JLabel userInfo = new JLabel(
+                "Xin chào: " + currentUser.getUsername()
+                        + " (" + currentUser.getRole() + ")"
+        );
 
         top.add(title, BorderLayout.WEST);
         top.add(userInfo, BorderLayout.EAST);
+
         return top;
     }
 
+    // ===== MAIN AREA =====
     private JComponent createMainArea() {
         JPanel main = new JPanel(new BorderLayout());
 
-        // Sidebar
-        String[] items = {
-                "Học viên",
-                "Giáo viên",
-                "Khóa học",
-                "Lớp học",
-                "Ghi danh",
-                "Thanh toán",
-                "Lịch học",
-                "Điểm danh",
-                "Phòng học",
-                "Kết quả",
-                "Hóa đơn",
-                "Nhân viên",
-                "Tài khoản"
-        };
-        JList<String> menu = new JList<>(items);
-        menu.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        menu.setSelectedIndex(0);
-        menu.addListSelectionListener(e -> {
+        menuList = new JList<>();
+        menuList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        menuList.addListSelectionListener(e -> {
             if (e.getValueIsAdjusting()) return;
-            String value = menu.getSelectedValue();
-            CardLayout cl = (CardLayout) contentPanel.getLayout();
-            cl.show(contentPanel, value);
+            String value = menuList.getSelectedValue();
+            if (value != null) {
+                CardLayout cl = (CardLayout) contentPanel.getLayout();
+                cl.show(contentPanel, value);
+            }
         });
-        JScrollPane menuScroll = new JScrollPane(menu);
+
+        JScrollPane menuScroll = new JScrollPane(menuList);
         menuScroll.setPreferredSize(new Dimension(200, 0));
 
         main.add(menuScroll, BorderLayout.WEST);
 
-        // Content cards
+        // Add tất cả card (phân quyền sẽ quyết định hiển thị)
         contentPanel.add(studentPanel, "Học viên");
         contentPanel.add(teacherPanel, "Giáo viên");
         contentPanel.add(coursePanel, "Khóa học");
@@ -110,21 +115,86 @@ public class LcmsMainFrame extends JFrame {
         return main;
     }
 
+    // ===== MENU BAR =====
     private JMenuBar createMenuBar() {
         JMenuBar bar = new JMenuBar();
 
         JMenu mSystem = new JMenu("System");
+
+        JMenuItem miLogout = new JMenuItem("Logout");
+
+        miLogout.addActionListener(e -> {
+            dispose();
+
+            UserAccountRepository userRepo = new UserAccountRepositoryImpl();
+            TransactionManager tx = new TransactionManager();
+            AuthService authService = new AuthService(userRepo, tx);
+
+            new LcmsLoginFrame(authService).setVisible(true);
+        });
+
         JMenuItem miExit = new JMenuItem("Exit");
-        miExit.addActionListener(e -> dispose());
+        miExit.addActionListener(e -> System.exit(0));
+
+        mSystem.add(miLogout);
+        mSystem.addSeparator();
         mSystem.add(miExit);
 
-        JMenu mReports = new JMenu("Reports");
-        mReports.add(new JMenuItem("Revenue by Course"));
-        mReports.add(new JMenuItem("Student Summary"));
-
         bar.add(mSystem);
-        bar.add(mReports);
+
         return bar;
     }
-}
 
+    // ===== PHÂN QUYỀN =====
+    private void applyAuthorization() {
+
+        String role = currentUser.getRole();
+
+        menuItems.clear();
+
+        // ADMIN: thấy tất cả
+        if ("ADMIN".equalsIgnoreCase(role)) {
+
+            addAllMenus();
+
+        }
+        // STAFF: hạn chế
+        else if ("STAFF".equalsIgnoreCase(role)) {
+
+            menuItems.add("Học viên");
+            menuItems.add("Khóa học");
+            menuItems.add("Lớp học");
+            menuItems.add("Ghi danh");
+            menuItems.add("Thanh toán");
+            menuItems.add("Lịch học");
+            menuItems.add("Điểm danh");
+            menuItems.add("Kết quả");
+            menuItems.add("Hóa đơn");
+
+            // Không có:
+            // Nhân viên
+            // Tài khoản
+        }
+
+        menuList.setListData(menuItems.toArray(new String[0]));
+        if (!menuItems.isEmpty()) {
+            menuList.setSelectedIndex(0);
+        }
+    }
+
+    private void addAllMenus() {
+        menuItems.add("Học viên");
+        menuItems.add("Giáo viên");
+        menuItems.add("Khóa học");
+        menuItems.add("Lớp học");
+        menuItems.add("Ghi danh");
+        menuItems.add("Thanh toán");
+        menuItems.add("Lịch học");
+        menuItems.add("Điểm danh");
+        menuItems.add("Phòng học");
+        menuItems.add("Kết quả");
+        menuItems.add("Hóa đơn");
+        menuItems.add("Nhân viên");
+        menuItems.add("Tài khoản");
+    }
+}
