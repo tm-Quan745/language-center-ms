@@ -1,19 +1,20 @@
 package vn.edu.ute.productmgmt.model;
 
 import jakarta.persistence.*;
+import vn.edu.ute.productmgmt.model.enums.ClassStatus;
 import java.time.LocalDate;
-import java.util.UUID;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "teaching_class")
+@Table(name = "classes")
 public class TeachingClass {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "class_id", updatable = false, nullable = false)
-    private UUID id;
+    private Long id;
 
-    @Column(name = "class_name", nullable = false, length = 100)
+    @Column(name = "class_name", nullable = false, length = 150)
     private String className;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -21,46 +22,51 @@ public class TeachingClass {
     private Course course;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "teacher_id", nullable = false)
+    @JoinColumn(name = "teacher_id")
     private Teacher teacher;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id")
     private Room room;
 
-    @Column(name = "start_date")
+    @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
 
     @Column(name = "end_date")
     private LocalDate endDate;
 
     @Column(name = "max_student", nullable = false)
-    private int maxStudent;
+    private int maxStudent = 0;
 
-    @Column(length = 20)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private ClassStatus status = ClassStatus.Planned;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 
     public TeachingClass() {
     }
 
-    public TeachingClass(UUID id, String className, Course course, Teacher teacher, Room room,
-                         LocalDate startDate, LocalDate endDate, int maxStudent, String status) {
-        this.id = id;
-        this.className = className;
-        this.course = course;
-        this.teacher = teacher;
-        this.room = room;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.maxStudent = maxStudent;
-        this.status = status;
-    }
-
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -120,11 +126,27 @@ public class TeachingClass {
         this.maxStudent = maxStudent;
     }
 
-    public String getStatus() {
+    public ClassStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(ClassStatus status) {
         this.status = status;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

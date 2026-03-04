@@ -1,17 +1,19 @@
 package vn.edu.ute.productmgmt.model;
 
 import jakarta.persistence.*;
+import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
+import vn.edu.ute.productmgmt.model.enums.Gender;
 import java.time.LocalDate;
-import java.util.UUID;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "student")
+@Table(name = "students")
 public class Student {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "student_id", updatable = false, nullable = false)
-    private UUID id;
+    private Long id;
 
     @Column(name = "full_name", nullable = false, length = 150)
     private String fullName;
@@ -19,45 +21,52 @@ public class Student {
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
+    @Enumerated(EnumType.STRING)
     @Column(length = 20)
-    private String gender;
+    private Gender gender;
 
-    @Column(length = 20)
+    @Column(length = 20, unique = true)
     private String phone;
 
-    @Column(length = 100)
+    @Column(length = 150, unique = true)
     private String email;
 
     @Column(length = 255)
     private String address;
 
-    @Column(name = "registration_date")
+    @Column(name = "registration_date", nullable = false)
     private LocalDate registrationDate;
 
-    @Column(length = 20)
-    private String status; // Active / Inactive
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private ActiveStatus status = ActiveStatus.Active;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+        if (registrationDate == null) registrationDate = LocalDate.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 
     public Student() {
     }
 
-    public Student(UUID id, String fullName, LocalDate dateOfBirth, String gender,
-                   String phone, String email, String address, LocalDate registrationDate, String status) {
-        this.id = id;
-        this.fullName = fullName;
-        this.dateOfBirth = dateOfBirth;
-        this.gender = gender;
-        this.phone = phone;
-        this.email = email;
-        this.address = address;
-        this.registrationDate = registrationDate;
-        this.status = status;
-    }
-
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -77,11 +86,11 @@ public class Student {
         this.dateOfBirth = dateOfBirth;
     }
 
-    public String getGender() {
+    public Gender getGender() {
         return gender;
     }
 
-    public void setGender(String gender) {
+    public void setGender(Gender gender) {
         this.gender = gender;
     }
 
@@ -117,11 +126,27 @@ public class Student {
         this.registrationDate = registrationDate;
     }
 
-    public String getStatus() {
+    public ActiveStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(ActiveStatus status) {
         this.status = status;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

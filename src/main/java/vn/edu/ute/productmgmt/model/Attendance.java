@@ -1,17 +1,18 @@
 package vn.edu.ute.productmgmt.model;
 
 import jakarta.persistence.*;
+import vn.edu.ute.productmgmt.model.enums.AttendanceStatus;
 import java.time.LocalDate;
-import java.util.UUID;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "attendance")
+@Table(name = "attendances", uniqueConstraints = @UniqueConstraint(columnNames = {"student_id", "class_id", "attend_date"}))
 public class Attendance {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "attendance_id", updatable = false, nullable = false)
-    private UUID id;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
@@ -21,28 +22,32 @@ public class Attendance {
     @JoinColumn(name = "class_id", nullable = false)
     private TeachingClass teachingClass;
 
-    @Column(nullable = false)
-    private LocalDate date;
+    @Column(name = "attend_date", nullable = false)
+    private LocalDate attendDate;
 
-    @Column(length = 20) // Present / Absent / Late
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private AttendanceStatus status = AttendanceStatus.Present;
+
+    @Column(length = 255)
+    private String note;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 
     public Attendance() {
     }
 
-    public Attendance(UUID id, Student student, TeachingClass teachingClass, LocalDate date, String status) {
-        this.id = id;
-        this.student = student;
-        this.teachingClass = teachingClass;
-        this.date = date;
-        this.status = status;
-    }
-
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -62,19 +67,35 @@ public class Attendance {
         this.teachingClass = teachingClass;
     }
 
-    public LocalDate getDate() {
-        return date;
+    public LocalDate getAttendDate() {
+        return attendDate;
     }
 
-    public void setDate(LocalDate date) {
-        this.date = date;
+    public void setAttendDate(LocalDate attendDate) {
+        this.attendDate = attendDate;
     }
 
-    public String getStatus() {
+    public AttendanceStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(AttendanceStatus status) {
         this.status = status;
+    }
+
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }

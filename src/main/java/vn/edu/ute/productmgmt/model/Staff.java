@@ -1,45 +1,61 @@
 package vn.edu.ute.productmgmt.model;
 
 import jakarta.persistence.*;
-import java.util.UUID;
+import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
+import vn.edu.ute.productmgmt.model.enums.StaffRole;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "staff")
+@Table(name = "staffs")
 public class Staff {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "staff_id", updatable = false, nullable = false)
-    private UUID id;
+    private Long id;
 
     @Column(name = "full_name", nullable = false, length = 150)
     private String fullName;
 
-    @Column(length = 50)
-    private String role;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private StaffRole role = StaffRole.Other;
 
-    @Column(length = 20)
+    @Column(length = 20, unique = true)
     private String phone;
 
-    @Column(length = 100)
+    @Column(length = 150, unique = true)
     private String email;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private ActiveStatus status = ActiveStatus.Active;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 
     public Staff() {
     }
 
-    public Staff(UUID id, String fullName, String role, String phone, String email) {
-        this.id = id;
-        this.fullName = fullName;
-        this.role = role;
-        this.phone = phone;
-        this.email = email;
-    }
-
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -51,11 +67,11 @@ public class Staff {
         this.fullName = fullName;
     }
 
-    public String getRole() {
+    public StaffRole getRole() {
         return role;
     }
 
-    public void setRole(String role) {
+    public void setRole(StaffRole role) {
         this.role = role;
     }
 
@@ -73,5 +89,29 @@ public class Staff {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public ActiveStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(ActiveStatus status) {
+        this.status = status;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

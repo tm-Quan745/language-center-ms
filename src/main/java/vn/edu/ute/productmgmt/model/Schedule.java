@@ -2,24 +2,24 @@ package vn.edu.ute.productmgmt.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.UUID;
 
 @Entity
-@Table(name = "schedule")
+@Table(name = "schedules", uniqueConstraints = @UniqueConstraint(columnNames = {"class_id", "study_date", "start_time", "end_time"}))
 public class Schedule {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "schedule_id", updatable = false, nullable = false)
-    private UUID id;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "class_id", nullable = false)
     private TeachingClass teachingClass;
 
-    @Column(nullable = false)
-    private LocalDate date;
+    @Column(name = "study_date", nullable = false)
+    private LocalDate studyDate;
 
     @Column(name = "start_time", nullable = false)
     private LocalTime startTime;
@@ -28,27 +28,25 @@ public class Schedule {
     private LocalTime endTime;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_id", nullable = false)
+    @JoinColumn(name = "room_id")
     private Room room;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 
     public Schedule() {
     }
 
-    public Schedule(UUID id, TeachingClass teachingClass, LocalDate date,
-                    LocalTime startTime, LocalTime endTime, Room room) {
-        this.id = id;
-        this.teachingClass = teachingClass;
-        this.date = date;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.room = room;
-    }
-
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -60,12 +58,12 @@ public class Schedule {
         this.teachingClass = teachingClass;
     }
 
-    public LocalDate getDate() {
-        return date;
+    public LocalDate getStudyDate() {
+        return studyDate;
     }
 
-    public void setDate(LocalDate date) {
-        this.date = date;
+    public void setStudyDate(LocalDate studyDate) {
+        this.studyDate = studyDate;
     }
 
     public LocalTime getStartTime() {
@@ -90,5 +88,13 @@ public class Schedule {
 
     public void setRoom(Room room) {
         this.room = room;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }

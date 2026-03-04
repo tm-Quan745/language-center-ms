@@ -31,9 +31,10 @@ public class JpaUserAccountRepository implements UserAccountRepository{
     }
 
     @Override
-    public void delete(EntityManager em, int id) throws Exception {
+    public void delete(EntityManager em, Long id) throws Exception {
         UserAccount userAccount = em.find(UserAccount.class, id);
-        if (userAccount == null) throw new Exception("UserAccount not found: " + id);
-        em.remove(userAccount);
+        if (userAccount != null) {
+            em.remove(userAccount);
+        }
     }
 }

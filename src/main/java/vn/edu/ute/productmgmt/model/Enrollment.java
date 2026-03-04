@@ -1,17 +1,19 @@
 package vn.edu.ute.productmgmt.model;
 
 import jakarta.persistence.*;
+import vn.edu.ute.productmgmt.model.enums.EnrollmentResult;
+import vn.edu.ute.productmgmt.model.enums.EnrollmentStatus;
 import java.time.LocalDate;
-import java.util.UUID;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "enrollment")
+@Table(name = "enrollments", uniqueConstraints = @UniqueConstraint(columnNames = {"student_id", "class_id"}))
 public class Enrollment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "enrollment_id", updatable = false, nullable = false)
-    private UUID id;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
@@ -24,30 +26,39 @@ public class Enrollment {
     @Column(name = "enrollment_date", nullable = false)
     private LocalDate enrollmentDate;
 
-    @Column(length = 20)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private EnrollmentStatus status = EnrollmentStatus.Enrolled;
 
-    @Column(length = 20)
-    private String result; // Pass / Fail / Pending
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10, nullable = false)
+    private EnrollmentResult result = EnrollmentResult.NA;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 
     public Enrollment() {
     }
 
-    public Enrollment(UUID id, Student student, TeachingClass teachingClass,
-                      LocalDate enrollmentDate, String status, String result) {
-        this.id = id;
-        this.student = student;
-        this.teachingClass = teachingClass;
-        this.enrollmentDate = enrollmentDate;
-        this.status = status;
-        this.result = result;
-    }
-
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -75,19 +86,35 @@ public class Enrollment {
         this.enrollmentDate = enrollmentDate;
     }
 
-    public String getStatus() {
+    public EnrollmentStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(EnrollmentStatus status) {
         this.status = status;
     }
 
-    public String getResult() {
+    public EnrollmentResult getResult() {
         return result;
     }
 
-    public void setResult(String result) {
+    public void setResult(EnrollmentResult result) {
         this.result = result;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

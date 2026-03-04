@@ -2,9 +2,12 @@ package vn.edu.ute.productmgmt.ui;
 
 import vn.edu.ute.productmgmt.db.TransactionManager;
 import vn.edu.ute.productmgmt.model.UserAccount;
+import vn.edu.ute.productmgmt.model.enums.UserRole;
 import vn.edu.ute.productmgmt.repo.UserAccountRepository;
 import vn.edu.ute.productmgmt.repo.jpa.UserAccountRepositoryImpl;
 import vn.edu.ute.productmgmt.service.AuthService;
+import vn.edu.ute.productmgmt.service.CourseService;
+import vn.edu.ute.productmgmt.service.RoomService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -14,29 +17,25 @@ import java.util.List;
 public class LcmsMainFrame extends JFrame {
 
     private final UserAccount currentUser;
+    private final CourseService courseService;
+    private final RoomService roomService;
 
-    private final StudentPanel studentPanel = new StudentPanel();
-    private final TeacherPanel teacherPanel = new TeacherPanel();
-    private final CoursePanel coursePanel = new CoursePanel();
-    private final ClassPanel classPanel = new ClassPanel();
-    private final EnrollmentPanel enrollmentPanel = new EnrollmentPanel();
-    private final PaymentPanel paymentPanel = new PaymentPanel();
-    private final SchedulePanel schedulePanel = new SchedulePanel();
-    private final AttendancePanel attendancePanel = new AttendancePanel();
-    private final RoomPanel roomPanel = new RoomPanel();
-    private final ResultPanel resultPanel = new ResultPanel();
-    private final InvoicePanel invoicePanel = new InvoicePanel();
+    private final CoursePanel coursePanel;
+    private final RoomPanel roomPanel;
     private final LcmsStaffPanel staffPanel = new LcmsStaffPanel();
-    private final UserAccountPanel userAccountPanel = new UserAccountPanel();
 
     private final JPanel contentPanel = new JPanel(new CardLayout());
     private JList<String> menuList;
 
     private final List<String> menuItems = new ArrayList<>();
 
-    public LcmsMainFrame(UserAccount user) {
+    public LcmsMainFrame(UserAccount user, CourseService courseService, RoomService roomService) {
         super("Language Center Management");
         this.currentUser = user;
+        this.courseService = courseService;
+        this.roomService = roomService;
+        this.coursePanel = new CoursePanel(courseService);
+        this.roomPanel = new RoomPanel(roomService);
 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         buildUI();
@@ -96,19 +95,9 @@ public class LcmsMainFrame extends JFrame {
         main.add(menuScroll, BorderLayout.WEST);
 
         // Add tất cả card (phân quyền sẽ quyết định hiển thị)
-        contentPanel.add(studentPanel, "Học viên");
-        contentPanel.add(teacherPanel, "Giáo viên");
         contentPanel.add(coursePanel, "Khóa học");
-        contentPanel.add(classPanel, "Lớp học");
-        contentPanel.add(enrollmentPanel, "Ghi danh");
-        contentPanel.add(paymentPanel, "Thanh toán");
-        contentPanel.add(schedulePanel, "Lịch học");
-        contentPanel.add(attendancePanel, "Điểm danh");
         contentPanel.add(roomPanel, "Phòng học");
-        contentPanel.add(resultPanel, "Kết quả");
-        contentPanel.add(invoicePanel, "Hóa đơn");
         contentPanel.add(staffPanel, "Nhân viên");
-        contentPanel.add(userAccountPanel, "Tài khoản");
 
         main.add(contentPanel, BorderLayout.CENTER);
 
@@ -130,7 +119,7 @@ public class LcmsMainFrame extends JFrame {
             TransactionManager tx = new TransactionManager();
             AuthService authService = new AuthService(userRepo, tx);
 
-            new LcmsLoginFrame(authService).setVisible(true);
+            new LcmsLoginFrame(authService, courseService, roomService).setVisible(true);
         });
 
         JMenuItem miExit = new JMenuItem("Exit");
@@ -148,32 +137,21 @@ public class LcmsMainFrame extends JFrame {
     // ===== PHÂN QUYỀN =====
     private void applyAuthorization() {
 
-        String role = currentUser.getRole();
+        UserRole role = currentUser.getRole();
 
         menuItems.clear();
 
         // ADMIN: thấy tất cả
-        if ("ADMIN".equalsIgnoreCase(role)) {
+        if (role == UserRole.Admin) {
 
             addAllMenus();
 
         }
         // STAFF: hạn chế
-        else if ("STAFF".equalsIgnoreCase(role)) {
+        else if (role == UserRole.Staff) {
 
-            menuItems.add("Học viên");
             menuItems.add("Khóa học");
-            menuItems.add("Lớp học");
-            menuItems.add("Ghi danh");
-            menuItems.add("Thanh toán");
-            menuItems.add("Lịch học");
-            menuItems.add("Điểm danh");
-            menuItems.add("Kết quả");
-            menuItems.add("Hóa đơn");
-
-            // Không có:
-            // Nhân viên
-            // Tài khoản
+            menuItems.add("Phòng học");
         }
 
         menuList.setListData(menuItems.toArray(new String[0]));
@@ -183,18 +161,8 @@ public class LcmsMainFrame extends JFrame {
     }
 
     private void addAllMenus() {
-        menuItems.add("Học viên");
-        menuItems.add("Giáo viên");
         menuItems.add("Khóa học");
-        menuItems.add("Lớp học");
-        menuItems.add("Ghi danh");
-        menuItems.add("Thanh toán");
-        menuItems.add("Lịch học");
-        menuItems.add("Điểm danh");
         menuItems.add("Phòng học");
-        menuItems.add("Kết quả");
-        menuItems.add("Hóa đơn");
         menuItems.add("Nhân viên");
-        menuItems.add("Tài khoản");
     }
 }

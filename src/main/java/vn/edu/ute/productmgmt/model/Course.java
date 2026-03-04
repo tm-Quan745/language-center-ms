@@ -1,55 +1,70 @@
 package vn.edu.ute.productmgmt.model;
 
 import jakarta.persistence.*;
+import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
+import vn.edu.ute.productmgmt.model.enums.CourseLevel;
+import vn.edu.ute.productmgmt.model.enums.DurationUnit;
 import java.math.BigDecimal;
-import java.util.UUID;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "course")
+@Table(name = "courses")
 public class Course {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "course_id", updatable = false, nullable = false)
-    private UUID id;
+    private Long id;
 
-    @Column(name = "course_name", nullable = false, length = 150)
+    @Column(name = "course_name", nullable = false, length = 200)
     private String courseName;
 
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(length = 50)
-    private String level;
-
-    @Column(length = 50)
-    private String duration;
-
-    @Column(precision = 14, scale = 2)
-    private BigDecimal fee;
-
+    @Enumerated(EnumType.STRING)
     @Column(length = 20)
-    private String status;
+    private CourseLevel level;
+
+    @Column(name = "duration")
+    private Integer duration;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "duration_unit", length = 10)
+    private DurationUnit durationUnit = DurationUnit.Week;
+
+    @Column(nullable = false, precision = 15, scale = 2)
+    private BigDecimal fee = BigDecimal.ZERO;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private ActiveStatus status = ActiveStatus.Active;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 
     public Course() {
     }
 
-    public Course(UUID id, String courseName, String description, String level,
-                  String duration, BigDecimal fee, String status) {
-        this.id = id;
-        this.courseName = courseName;
-        this.description = description;
-        this.level = level;
-        this.duration = duration;
-        this.fee = fee;
-        this.status = status;
-    }
-
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -69,20 +84,28 @@ public class Course {
         this.description = description;
     }
 
-    public String getLevel() {
+    public CourseLevel getLevel() {
         return level;
     }
 
-    public void setLevel(String level) {
+    public void setLevel(CourseLevel level) {
         this.level = level;
     }
 
-    public String getDuration() {
+    public Integer getDuration() {
         return duration;
     }
 
-    public void setDuration(String duration) {
+    public void setDuration(Integer duration) {
         this.duration = duration;
+    }
+
+    public DurationUnit getDurationUnit() {
+        return durationUnit;
+    }
+
+    public void setDurationUnit(DurationUnit durationUnit) {
+        this.durationUnit = durationUnit;
     }
 
     public BigDecimal getFee() {
@@ -93,11 +116,27 @@ public class Course {
         this.fee = fee;
     }
 
-    public String getStatus() {
+    public ActiveStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(ActiveStatus status) {
         this.status = status;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

@@ -1,5 +1,9 @@
 package vn.edu.ute.productmgmt.ui;
 
+import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
+import vn.edu.ute.productmgmt.model.enums.CourseLevel;
+import vn.edu.ute.productmgmt.model.enums.DurationUnit;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -10,10 +14,11 @@ public class CourseFormDialog extends JDialog {
 
     private final JTextField txtName = new JTextField(25);
     private final JTextArea txtDescription = new JTextArea(4, 25);
-    private final JComboBox<String> cboLevel = new JComboBox<>(new String[]{"Beginner", "Intermediate", "Advanced"});
+    private final JComboBox<CourseLevel> cboLevel = new JComboBox<>(CourseLevel.values());
     private final JTextField txtDuration = new JTextField(10);
+    private final JComboBox<DurationUnit> cboDurationUnit = new JComboBox<>(DurationUnit.values());
     private final JTextField txtFee = new JTextField(10);
-    private final JComboBox<String> cboStatus = new JComboBox<>(new String[]{"Active", "Inactive"});
+    private final JComboBox<ActiveStatus> cboStatus = new JComboBox<>(ActiveStatus.values());
 
     private boolean saved = false;
     private CourseFormData result;
@@ -26,10 +31,11 @@ public class CourseFormDialog extends JDialog {
         if (existing != null) {
             txtName.setText(existing.getName());
             txtDescription.setText(existing.getDescription());
-            cboLevel.setSelectedItem(existing.getLevel());
+            if (existing.getLevel() != null) cboLevel.setSelectedItem(existing.getLevel());
             txtDuration.setText(existing.getDuration());
+            if (existing.getDurationUnit() != null) cboDurationUnit.setSelectedItem(existing.getDurationUnit());
             txtFee.setText(existing.getFee());
-            cboStatus.setSelectedItem(existing.getStatus());
+            if (existing.getStatus() != null) cboStatus.setSelectedItem(existing.getStatus());
             result = existing;
         } else {
             result = new CourseFormData();
@@ -73,7 +79,10 @@ public class CourseFormDialog extends JDialog {
         g.gridy = r;
         form.add(new JLabel("Duration:"), g);
         g.gridx = 1;
-        form.add(txtDuration, g);
+        JPanel durationPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        durationPanel.add(txtDuration);
+        durationPanel.add(cboDurationUnit);
+        form.add(durationPanel, g);
 
         r++;
         g.gridx = 0;
@@ -113,10 +122,11 @@ public class CourseFormDialog extends JDialog {
 
             result.setName(name);
             result.setDescription(txtDescription.getText().trim());
-            result.setLevel((String) cboLevel.getSelectedItem());
+            result.setLevel((CourseLevel) cboLevel.getSelectedItem());
             result.setDuration(txtDuration.getText().trim());
+            result.setDurationUnit((DurationUnit) cboDurationUnit.getSelectedItem());
             result.setFee(txtFee.getText().trim());
-            result.setStatus((String) cboStatus.getSelectedItem());
+            result.setStatus((ActiveStatus) cboStatus.getSelectedItem());
 
             saved = true;
             dispose();
@@ -139,10 +149,11 @@ public class CourseFormDialog extends JDialog {
     public static class CourseFormData {
         private String name;
         private String description;
-        private String level;
+        private CourseLevel level;
         private String duration;
+        private DurationUnit durationUnit;
         private String fee;
-        private String status;
+        private ActiveStatus status;
 
         public String getName() {
             return name;
@@ -160,11 +171,11 @@ public class CourseFormDialog extends JDialog {
             this.description = description;
         }
 
-        public String getLevel() {
+        public CourseLevel getLevel() {
             return level;
         }
 
-        public void setLevel(String level) {
+        public void setLevel(CourseLevel level) {
             this.level = level;
         }
 
@@ -176,6 +187,14 @@ public class CourseFormDialog extends JDialog {
             this.duration = duration;
         }
 
+        public DurationUnit getDurationUnit() {
+            return durationUnit;
+        }
+
+        public void setDurationUnit(DurationUnit durationUnit) {
+            this.durationUnit = durationUnit;
+        }
+
         public String getFee() {
             return fee;
         }
@@ -184,11 +203,11 @@ public class CourseFormDialog extends JDialog {
             this.fee = fee;
         }
 
-        public String getStatus() {
+        public ActiveStatus getStatus() {
             return status;
         }
 
-        public void setStatus(String status) {
+        public void setStatus(ActiveStatus status) {
             this.status = status;
         }
     }

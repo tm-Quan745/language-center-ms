@@ -45,9 +45,9 @@ public class StaffService {
     }
 
     /**
-     * Xoá nhân viên theo id (kiểu int theo StaffRepository hiện tại).
+     * Xoá nhân viên theo id.
      */
-    public void delete(int id) throws Exception {
+    public void delete(Long id) throws Exception {
         tx.runInTransaction(em -> {
             staffRepo.delete(em, id);
             return null;
@@ -57,7 +57,7 @@ public class StaffService {
     /**
      * Lấy thông tin 1 nhân viên theo id.
      */
-    public Staff getById(int id) throws Exception {
+    public Staff getById(Long id) throws Exception {
         return tx.runInTransaction(em -> staffRepo.findById(em, id));
     }
 }

@@ -1,5 +1,8 @@
 package vn.edu.ute.productmgmt.ui;
 
+import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
+import vn.edu.ute.productmgmt.model.enums.Gender;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -10,11 +13,11 @@ public class StudentFormDialog extends JDialog {
 
     private final JTextField txtFullName = new JTextField(25);
     private final JTextField txtDob = new JTextField(10);
-    private final JComboBox<String> cboGender = new JComboBox<>(new String[]{"Male", "Female", "Other"});
+    private final JComboBox<Gender> cboGender = new JComboBox<>(Gender.values());
     private final JTextField txtPhone = new JTextField(15);
     private final JTextField txtEmail = new JTextField(25);
     private final JTextField txtAddress = new JTextField(25);
-    private final JComboBox<String> cboStatus = new JComboBox<>(new String[]{"Active", "Inactive"});
+    private final JComboBox<ActiveStatus> cboStatus = new JComboBox<>(ActiveStatus.values());
 
     private boolean saved = false;
     private StudentFormData result;
@@ -130,11 +133,11 @@ public class StudentFormDialog extends JDialog {
 
             result.setFullName(fullName);
             result.setDateOfBirth(txtDob.getText().trim());
-            result.setGender((String) cboGender.getSelectedItem());
+            result.setGender((Gender) cboGender.getSelectedItem());
             result.setPhone(phone);
             result.setEmail(email);
             result.setAddress(txtAddress.getText().trim());
-            result.setStatus((String) cboStatus.getSelectedItem());
+            result.setStatus((ActiveStatus) cboStatus.getSelectedItem());
 
             saved = true;
             dispose();
@@ -157,11 +160,11 @@ public class StudentFormDialog extends JDialog {
     public static class StudentFormData {
         private String fullName;
         private String dateOfBirth;
-        private String gender;
+        private Gender gender;
         private String phone;
         private String email;
         private String address;
-        private String status;
+        private ActiveStatus status;
 
         public String getFullName() {
             return fullName;
@@ -179,11 +182,11 @@ public class StudentFormDialog extends JDialog {
             this.dateOfBirth = dateOfBirth;
         }
 
-        public String getGender() {
+        public Gender getGender() {
             return gender;
         }
 
-        public void setGender(String gender) {
+        public void setGender(Gender gender) {
             this.gender = gender;
         }
 
@@ -211,11 +214,11 @@ public class StudentFormDialog extends JDialog {
             this.address = address;
         }
 
-        public String getStatus() {
+        public ActiveStatus getStatus() {
             return status;
         }
 
-        public void setStatus(String status) {
+        public void setStatus(ActiveStatus status) {
             this.status = status;
         }
     }

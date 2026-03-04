@@ -5,7 +5,6 @@ import vn.edu.ute.productmgmt.model.Course;
 import vn.edu.ute.productmgmt.repo.CourseRepository;
 
 import java.util.List;
-import java.util.UUID;
 
 public class JpaCourseRepository implements CourseRepository {
 
@@ -20,7 +19,7 @@ public class JpaCourseRepository implements CourseRepository {
     }
 
     @Override
-    public void delete(EntityManager em, UUID id) {
+    public void delete(EntityManager em, Long id) {
         Course course = em.find(Course.class, id);
         if (course != null) {
             em.remove(course);
@@ -28,7 +27,7 @@ public class JpaCourseRepository implements CourseRepository {
     }
 
     @Override
-    public Course findById(EntityManager em, UUID id) {
+    public Course findById(EntityManager em, Long id) {
         return em.find(Course.class, id);
     }
 

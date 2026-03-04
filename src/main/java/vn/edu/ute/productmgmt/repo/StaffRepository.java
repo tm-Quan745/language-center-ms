@@ -6,9 +6,9 @@ import vn.edu.ute.productmgmt.model.Staff;
 import java.util.List;
 
 public interface StaffRepository {
-    Staff findById(EntityManager em, int id) throws Exception;
+    Staff findById(EntityManager em, Long id) throws Exception;
     List<Staff> findAll(EntityManager em) throws Exception;
     void insert(EntityManager em, Staff staff) throws Exception;
     void update(EntityManager em, Staff staff) throws Exception;
-    void delete(EntityManager em, int id) throws Exception;
+    void delete(EntityManager em, Long id) throws Exception;
 }

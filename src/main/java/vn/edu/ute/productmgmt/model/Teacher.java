@@ -1,25 +1,26 @@
 package vn.edu.ute.productmgmt.model;
 
 import jakarta.persistence.*;
+import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
 import java.time.LocalDate;
-import java.util.UUID;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "teacher")
+@Table(name = "teachers")
 public class Teacher {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "teacher_id", updatable = false, nullable = false)
-    private UUID id;
+    private Long id;
 
     @Column(name = "full_name", nullable = false, length = 150)
     private String fullName;
 
-    @Column(length = 20)
+    @Column(length = 20, unique = true)
     private String phone;
 
-    @Column(length = 100)
+    @Column(length = 150, unique = true)
     private String email;
 
     @Column(length = 100)
@@ -28,28 +29,35 @@ public class Teacher {
     @Column(name = "hire_date")
     private LocalDate hireDate;
 
-    @Column(length = 20)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private ActiveStatus status = ActiveStatus.Active;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 
     public Teacher() {
     }
 
-    public Teacher(UUID id, String fullName, String phone, String email,
-                  String specialty, LocalDate hireDate, String status) {
-        this.id = id;
-        this.fullName = fullName;
-        this.phone = phone;
-        this.email = email;
-        this.specialty = specialty;
-        this.hireDate = hireDate;
-        this.status = status;
-    }
-
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -93,11 +101,27 @@ public class Teacher {
         this.hireDate = hireDate;
     }
 
-    public String getStatus() {
+    public ActiveStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(ActiveStatus status) {
         this.status = status;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

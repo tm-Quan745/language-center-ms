@@ -8,7 +8,7 @@ import java.util.List;
 
 public class JpaStaffRepository implements StaffRepository {
     @Override
-    public Staff findById(EntityManager em, int id) throws Exception {
+    public Staff findById(EntityManager em, Long id) throws Exception {
         return em.find(Staff.class, id);
     }
 
@@ -29,7 +29,7 @@ public class JpaStaffRepository implements StaffRepository {
     }
 
     @Override
-    public void delete(EntityManager em, int id) throws Exception {
+    public void delete(EntityManager em, Long id) throws Exception {
         Staff staff = em.find(Staff.class, id);
         if (staff == null) throw new Exception("Staff not found: " + id);
         em.remove(staff);

@@ -1,5 +1,7 @@
 package vn.edu.ute.productmgmt.ui;
 
+import vn.edu.ute.productmgmt.model.enums.ClassStatus;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -21,7 +23,7 @@ public class ClassFormDialog extends JDialog {
     private final JTextField txtStartDate = new JTextField(10);
     private final JTextField txtEndDate = new JTextField(10);
     private final JTextField txtMaxStudent = new JTextField(5);
-    private final JComboBox<String> cboStatus = new JComboBox<>(new String[]{"Planned", "Running", "Finished"});
+    private final JComboBox<ClassStatus> cboStatus = new JComboBox<>(ClassStatus.values());
 
     private boolean saved = false;
     private ClassFormData result;
@@ -39,7 +41,7 @@ public class ClassFormDialog extends JDialog {
             txtStartDate.setText(existing.getStartDate());
             txtEndDate.setText(existing.getEndDate());
             txtMaxStudent.setText(existing.getMaxStudent());
-            cboStatus.setSelectedItem(existing.getStatus());
+            if (existing.getStatus() != null) cboStatus.setSelectedItem(existing.getStatus());
             result = existing;
         } else {
             result = new ClassFormData();
@@ -140,7 +142,7 @@ public class ClassFormDialog extends JDialog {
             result.setStartDate(txtStartDate.getText().trim());
             result.setEndDate(txtEndDate.getText().trim());
             result.setMaxStudent(txtMaxStudent.getText().trim());
-            result.setStatus((String) cboStatus.getSelectedItem());
+            result.setStatus((ClassStatus) cboStatus.getSelectedItem());
 
             saved = true;
             dispose();
@@ -168,7 +170,7 @@ public class ClassFormDialog extends JDialog {
         private String startDate;
         private String endDate;
         private String maxStudent;
-        private String status;
+        private ClassStatus status;
 
         public String getClassName() {
             return className;
@@ -226,11 +228,11 @@ public class ClassFormDialog extends JDialog {
             this.maxStudent = maxStudent;
         }
 
-        public String getStatus() {
+        public ClassStatus getStatus() {
             return status;
         }
 
-        public void setStatus(String status) {
+        public void setStatus(ClassStatus status) {
             this.status = status;
         }
     }

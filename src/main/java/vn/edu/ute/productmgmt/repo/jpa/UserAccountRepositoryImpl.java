@@ -7,7 +7,6 @@ import vn.edu.ute.productmgmt.model.UserAccount;
 import vn.edu.ute.productmgmt.repo.UserAccountRepository;
 
 import java.util.List;
-import java.util.UUID;
 
 public class UserAccountRepositoryImpl implements UserAccountRepository {
 
@@ -44,7 +43,7 @@ public class UserAccountRepositoryImpl implements UserAccountRepository {
     }
 
     @Override
-    public void delete(EntityManager em, int id) {
+    public void delete(EntityManager em, Long id) {
         UserAccount user = em.find(UserAccount.class, id);
         if (user != null) {
             em.remove(user);

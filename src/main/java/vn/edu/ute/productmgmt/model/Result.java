@@ -1,16 +1,17 @@
 package vn.edu.ute.productmgmt.model;
 
 import jakarta.persistence.*;
-import java.util.UUID;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "result")
+@Table(name = "results", uniqueConstraints = @UniqueConstraint(columnNames = {"student_id", "class_id"}))
 public class Result {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "result_id", updatable = false, nullable = false)
-    private UUID id;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
@@ -20,33 +21,40 @@ public class Result {
     @JoinColumn(name = "class_id", nullable = false)
     private TeachingClass teachingClass;
 
-    @Column(nullable = false)
-    private double score;
+    @Column(precision = 5, scale = 2)
+    private BigDecimal score;
 
-    @Column(length = 20)
+    @Column(length = 10)
     private String grade;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(length = 255)
     private String comment;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 
     public Result() {
     }
 
-    public Result(UUID id, Student student, TeachingClass teachingClass,
-                  double score, String grade, String comment) {
-        this.id = id;
-        this.student = student;
-        this.teachingClass = teachingClass;
-        this.score = score;
-        this.grade = grade;
-        this.comment = comment;
-    }
-
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -66,11 +74,11 @@ public class Result {
         this.teachingClass = teachingClass;
     }
 
-    public double getScore() {
+    public BigDecimal getScore() {
         return score;
     }
 
-    public void setScore(double score) {
+    public void setScore(BigDecimal score) {
         this.score = score;
     }
 
@@ -88,5 +96,21 @@ public class Result {
 
     public void setComment(String comment) {
         this.comment = comment;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

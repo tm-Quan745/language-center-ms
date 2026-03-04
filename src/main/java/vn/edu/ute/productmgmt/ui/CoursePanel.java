@@ -1,57 +1,76 @@
 package vn.edu.ute.productmgmt.ui;
 
+import vn.edu.ute.productmgmt.model.Course;
+import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
+import vn.edu.ute.productmgmt.model.enums.CourseLevel;
+import vn.edu.ute.productmgmt.model.enums.DurationUnit;
+import vn.edu.ute.productmgmt.service.CourseService;
+
 import javax.swing.*;
+import javax.swing.table.AbstractTableModel;
 import java.awt.*;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Màn hình Khóa học: form chi tiết giống dashboard, dùng mock data.
+ * Panel Khóa học: form (Tên KH, Mức phí, Thời lượng) + JTable danh sách, ghép CourseService.
  */
 public class CoursePanel extends JPanel {
 
-    private final JTextField txtCourseId = new JTextField(10);
-    private final JTextField txtCourseName = new JTextField(25);
-    private final JTextArea txtDescription = new JTextArea(3, 25);
-    private final JComboBox<String> cboLevel = new JComboBox<>(new String[]{"Beginner", "Intermediate", "Advanced"});
-    private final JTextField txtDuration = new JTextField(10);
-    private final JTextField txtFee = new JTextField(10);
-    private final JComboBox<String> cboStatus = new JComboBox<>(new String[]{"Active", "Inactive"});
+    private final CourseService courseService;
 
-    public CoursePanel() {
-        super(new BorderLayout(8, 8));
+    private final JTextField txtCourseName = new JTextField(25);
+    private final JTextField txtFee = new JTextField(10);
+    private final JTextField txtDuration = new JTextField(15);
+    private final JLabel lblInfo = new JLabel(" ");
+    private final JComboBox<DurationUnit> cboDurationUnit = new JComboBox<>(DurationUnit.values());
+    private final JComboBox<CourseLevel> cboLevel = new JComboBox<>(CourseLevel.values());
+    private final JComboBox<ActiveStatus> cboStatus = new JComboBox<>(ActiveStatus.values());
+    private final JTextArea txtDescription = new JTextArea(4, 25);
+    private final CourseTableModel tableModel = new CourseTableModel();
+    private final JTable table = new JTable(tableModel);
+    private Course selectedCourse;
+
+    public CoursePanel(CourseService courseService) {
+        this.courseService = courseService;
+        setLayout(new BorderLayout(8, 8));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         buildUI();
-        loadMockData();
+        table.getSelectionModel().addListSelectionListener(e -> {
+            if (e.getValueIsAdjusting()) return;
+            onTableSelection();
+        });
+        loadTable();
     }
 
     private void buildUI() {
         add(buildActionBar(), BorderLayout.NORTH);
-        add(buildForm(), BorderLayout.CENTER);
+        add(buildFormAndTable(), BorderLayout.CENTER);
+        add(lblInfo, BorderLayout.SOUTH);
     }
 
     private JComponent buildActionBar() {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
-
-        JButton btnBack = new JButton("Quay lại");
         JButton btnAdd = new JButton("Thêm mới");
         JButton btnSave = new JButton("Lưu");
         JButton btnDelete = new JButton("Xóa");
+        JButton btnRefresh = new JButton("Tải lại");
 
-        btnBack.addActionListener(e ->
-                JOptionPane.showMessageDialog(this, "Back (mock) - chưa xử lý điều hướng."));
-        btnAdd.addActionListener(e -> clearForm());
-        btnSave.addActionListener(e -> JOptionPane.showMessageDialog(this, "Đã lưu khóa học (mock)."));
-        btnDelete.addActionListener(e -> JOptionPane.showMessageDialog(this, "Đã xóa khóa học (mock)."));
+        btnAdd.addActionListener(e -> onAdd());
+        btnSave.addActionListener(e -> onSave());
+        btnDelete.addActionListener(e -> onDelete());
+        btnRefresh.addActionListener(e -> loadTable());
 
-        bar.add(btnBack);
         bar.add(btnAdd);
         bar.add(btnSave);
         bar.add(btnDelete);
-
+        bar.add(btnRefresh);
         return bar;
     }
 
-    private JComponent buildForm() {
-        JPanel wrapper = new JPanel(new BorderLayout());
+    private JComponent buildFormAndTable() {
+        JPanel wrapper = new JPanel(new BorderLayout(8, 8));
         UI.stylePanelBorder(wrapper, "Thông tin khóa học");
 
         JPanel form = new JPanel(new GridBagLayout());
@@ -61,56 +80,300 @@ public class CoursePanel extends JPanel {
         g.fill = GridBagConstraints.HORIZONTAL;
 
         int r = 0;
+        // Hàng 1: Tên khóa học, Mức phí
+        addField(form, g, r, 0, "Tên khóa học:", txtCourseName);
+        addField(form, g, r, 1, "Mức phí (VNĐ):", txtFee);
 
-        addField(form, g, r, 0, "Mã khóa:", txtCourseId);
-        addField(form, g, r, 1, "Tên khóa học:", txtCourseName);
-        addField(form, g, r, 2, "Level:", cboLevel);
-
+        // Hàng 2: Mức độ, Trạng thái
         r++;
-        addField(form, g, r, 0, "Thời lượng:", txtDuration);
-        addField(form, g, r, 1, "Học phí:", txtFee);
-        addField(form, g, r, 2, "Trạng thái:", cboStatus);
+        addField(form, g, r, 0, "Mức độ:", cboLevel);
+        addField(form, g, r, 1, "Trạng thái:", cboStatus);
 
+        // Hàng 3: Thời lượng + đơn vị
         r++;
-        addField(form, g, r, 0, "Mô tả:", new JScrollPane(txtDescription));
+        g.gridx = 0;
+        g.gridy = r;
+        form.add(new JLabel("Thời lượng:"), g);
+        g.gridx = 1;
+        JPanel durationPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        durationPanel.add(txtDuration);
+        durationPanel.add(cboDurationUnit);
+        form.add(durationPanel, g);
 
-        wrapper.add(form, BorderLayout.CENTER);
+        // Hàng 4: Mô tả
+        r++;
+        g.gridx = 0;
+        g.gridy = r;
+        form.add(new JLabel("Mô tả:"), g);
+        g.gridx = 1;
+        JScrollPane descScroll = new JScrollPane(txtDescription);
+        form.add(descScroll, g);
+
+        wrapper.add(form, BorderLayout.NORTH);
+
+        JScrollPane scroll = new JScrollPane(table);
+        UI.styleTable(table);
+        wrapper.add(scroll, BorderLayout.CENTER);
+
         return wrapper;
     }
 
-    private void addField(JPanel form, GridBagConstraints g, int row, int col,
-                          String label, JComponent field) {
-        int baseGridX = col * 2;
+    private void addField(JPanel form, GridBagConstraints g, int row, int col, String label, JComponent field) {
         g.gridy = row;
-
-        g.gridx = baseGridX;
+        g.gridx = col * 2;
         g.weightx = 0.0;
         form.add(new JLabel(label), g);
-
-        g.gridx = baseGridX + 1;
+        g.gridx = col * 2 + 1;
         g.weightx = 1.0;
         form.add(field, g);
     }
 
-    private void loadMockData() {
-        txtCourseId.setText("C001");
-        txtCourseName.setText("IELTS Foundation");
-        txtDescription.setText("Khóa học nền tảng cho IELTS, tập trung 4 kỹ năng.");
-        cboLevel.setSelectedItem("Beginner");
-        txtDuration.setText("12 tuần");
-        txtFee.setText("5,000,000");
-        cboStatus.setSelectedItem("Active");
+    private void loadTable() {
+        try {
+            List<Course> list = courseService.findAll();
+            tableModel.setData(list);
+            lblInfo.setText("Tổng số: " + list.size() + " khóa học.");
+            clearSelection();
+        } catch (Exception ex) {
+            lblInfo.setText("Lỗi: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, "Không tải được danh sách: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void onTableSelection() {
+        int row = table.getSelectedRow();
+        if (row < 0) {
+            selectedCourse = null;
+            clearForm();
+            return;
+        }
+        selectedCourse = tableModel.getCourseAt(row);
+        if (selectedCourse != null) {
+            txtCourseName.setText(selectedCourse.getCourseName());
+            txtFee.setText(selectedCourse.getFee() != null ? selectedCourse.getFee().toPlainString() : "");
+            txtDuration.setText(selectedCourse.getDuration() != null ? selectedCourse.getDuration().toString() : "");
+            if (selectedCourse.getDurationUnit() != null) {
+                cboDurationUnit.setSelectedItem(selectedCourse.getDurationUnit());
+            } else {
+                cboDurationUnit.setSelectedItem(DurationUnit.Week);
+            }
+            if (selectedCourse.getLevel() != null) {
+                cboLevel.setSelectedItem(selectedCourse.getLevel());
+            } else {
+                cboLevel.setSelectedItem(null);
+            }
+            if (selectedCourse.getStatus() != null) {
+                cboStatus.setSelectedItem(selectedCourse.getStatus());
+            } else {
+                cboStatus.setSelectedItem(ActiveStatus.Active);
+            }
+            txtDescription.setText(selectedCourse.getDescription() != null ? selectedCourse.getDescription() : "");
+        }
+    }
+
+    private void onAdd() {
+        CourseFormDialog dialog = new CourseFormDialog(
+                SwingUtilities.getWindowAncestor(this),
+                null
+        );
+        dialog.setVisible(true);
+        if (!dialog.isSaved()) {
+            return;
+        }
+
+        CourseFormDialog.CourseFormData data = dialog.getResult();
+        Course c = formDataToCourse(data, null);
+        if (c == null) return;
+        try {
+            courseService.create(c);
+            JOptionPane.showMessageDialog(this, "Đã thêm khóa học.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+            loadTable();
+            clearForm();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void onSave() {
+        if (selectedCourse == null) {
+            JOptionPane.showMessageDialog(this, "Chọn một khóa học để sửa.", "Chưa chọn", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Course c = formToCourse(selectedCourse.getId());
+        if (c == null) return;
+        try {
+            courseService.update(c);
+            JOptionPane.showMessageDialog(this, "Đã cập nhật khóa học.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+            loadTable();
+            clearSelection();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void onDelete() {
+        if (selectedCourse == null) {
+            JOptionPane.showMessageDialog(this, "Chọn một khóa học để xóa.", "Chưa chọn", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        int ok = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa khóa học này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+        if (ok != JOptionPane.YES_OPTION) return;
+        try {
+            courseService.delete(selectedCourse.getId());
+            JOptionPane.showMessageDialog(this, "Đã xóa khóa học.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+            loadTable();
+            clearSelection();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private Course formDataToCourse(CourseFormDialog.CourseFormData data, Long keepId) {
+        String name = data.getName() != null ? data.getName().trim() : "";
+        String feeStr = data.getFee() != null ? data.getFee().trim() : "";
+        String durationStr = data.getDuration() != null ? data.getDuration().trim() : "";
+        if (name.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Tên khóa học không được để trống.", "Lỗi", JOptionPane.WARNING_MESSAGE);
+            return null;
+        }
+        BigDecimal fee = BigDecimal.ZERO;
+        if (!feeStr.isEmpty()) {
+            try {
+                fee = new BigDecimal(feeStr.replace(",", "."));
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Mức phí không hợp lệ.", "Lỗi", JOptionPane.WARNING_MESSAGE);
+                return null;
+            }
+        }
+        Integer duration = null;
+        if (!durationStr.isEmpty()) {
+            try {
+                duration = Integer.parseInt(durationStr);
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Thời lượng không hợp lệ.", "Lỗi", JOptionPane.WARNING_MESSAGE);
+                return null;
+            }
+        }
+        Course c = new Course();
+        if (keepId != null) c.setId(keepId);
+        c.setCourseName(name);
+        c.setDescription(data.getDescription());
+        c.setLevel(data.getLevel());
+        c.setDuration(duration);
+        c.setDurationUnit(data.getDurationUnit() != null ? data.getDurationUnit() : DurationUnit.Week);
+        c.setFee(fee);
+        c.setStatus(data.getStatus());
+        return c;
+    }
+
+    private Course formToCourse(Long keepId) {
+        String name = txtCourseName.getText().trim();
+        String feeStr = txtFee.getText().trim();
+        String durationStr = txtDuration.getText().trim();
+        CourseLevel level = (CourseLevel) cboLevel.getSelectedItem();
+        ActiveStatus status = (ActiveStatus) cboStatus.getSelectedItem();
+        DurationUnit durationUnit = (DurationUnit) cboDurationUnit.getSelectedItem();
+        String description = txtDescription.getText().trim();
+        if (name.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Tên khóa học không được để trống.", "Lỗi", JOptionPane.WARNING_MESSAGE);
+            return null;
+        }
+        BigDecimal fee = BigDecimal.ZERO;
+        if (!feeStr.isEmpty()) {
+            try {
+                fee = new BigDecimal(feeStr.replace(",", "."));
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Mức phí không hợp lệ.", "Lỗi", JOptionPane.WARNING_MESSAGE);
+                return null;
+            }
+        }
+        Integer duration = null;
+        if (!durationStr.isEmpty()) {
+            try {
+                duration = Integer.parseInt(durationStr.trim());
+            } catch (NumberFormatException ignored) { }
+        }
+        Course c = new Course();
+        if (keepId != null) c.setId(keepId);
+        c.setCourseName(name);
+        c.setDescription(description.isEmpty() ? null : description);
+        c.setLevel(level);
+        c.setFee(fee);
+        c.setDuration(duration);
+        c.setDurationUnit(durationUnit != null ? durationUnit : DurationUnit.Week);
+        c.setStatus(status != null ? status : ActiveStatus.Active);
+        return c;
     }
 
     private void clearForm() {
-        txtCourseId.setText("");
         txtCourseName.setText("");
-        txtDescription.setText("");
-        txtDuration.setText("");
         txtFee.setText("");
-        cboLevel.setSelectedIndex(0);
-        cboStatus.setSelectedIndex(0);
+        txtDuration.setText("");
+        txtDescription.setText("");
+        cboLevel.setSelectedItem(null);
+        cboStatus.setSelectedItem(ActiveStatus.Active);
+        cboDurationUnit.setSelectedItem(DurationUnit.Week);
+        selectedCourse = null;
+    }
+
+    private void clearSelection() {
+        selectedCourse = null;
+        clearForm();
+        table.clearSelection();
+    }
+
+    // --- Table model ---
+    private static class CourseTableModel extends AbstractTableModel {
+        private final String[] columns = {
+                "Tên khóa học",
+                "Mức phí",
+                "Thời lượng",
+                "Mức độ",
+                "Trạng thái",
+                "Mô tả"
+        };
+        private List<Course> data = new ArrayList<>();
+
+        void setData(List<Course> data) {
+            this.data = data != null ? data : new ArrayList<>();
+            fireTableDataChanged();
+        }
+
+        Course getCourseAt(int row) {
+            if (row < 0 || row >= data.size()) return null;
+            return data.get(row);
+        }
+
+        @Override
+        public int getRowCount() { return data.size(); }
+
+        @Override
+        public int getColumnCount() { return columns.length; }
+
+        @Override
+        public String getColumnName(int col) { return columns[col]; }
+
+        @Override
+        public Object getValueAt(int row, int col) {
+            Course c = data.get(row);
+            switch (col) {
+                case 0:
+                    return c.getCourseName();
+                case 1:
+                    return c.getFee() != null ? c.getFee().toPlainString() : "";
+                case 2:
+                    return c.getDuration() != null
+                            ? c.getDuration() + " " + (c.getDurationUnit() != null ? c.getDurationUnit().name() : "")
+                            : "";
+                case 3:
+                    return c.getLevel() != null ? c.getLevel().name() : "";
+                case 4:
+                    return c.getStatus() != null ? c.getStatus().name() : "";
+                case 5:
+                    return c.getDescription() != null ? c.getDescription() : "";
+                default:
+                    return "";
+            }
+        }
     }
 }
-
-
