@@ -1,136 +1,201 @@
 package vn.edu.ute.productmgmt.ui;
 
-import javax.swing.*;
-import java.awt.*;
+import vn.edu.ute.productmgmt.config.AppContext;
+import vn.edu.ute.productmgmt.model.*;
+import vn.edu.ute.productmgmt.service.*;
 
-/**
- * Màn hình Lớp học: form chi tiết lớp theo style dashboard, dùng mock data.
- */
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.time.LocalDate;
+import java.util.List;
+
 public class ClassPanel extends JPanel {
 
-    private final JTextField txtClassId = new JTextField(10);
-    private final JTextField txtClassName = new JTextField(25);
-    private final JComboBox<String> cboCourse = new JComboBox<>(new String[]{
-            "IELTS Foundation", "TOEIC 500+", "English Communication"
-    });
-    private final JComboBox<String> cboTeacher = new JComboBox<>(new String[]{
-            "Thay An", "Co Binh", "Thay Cuong"
-    });
-    private final JComboBox<String> cboRoom = new JComboBox<>(new String[]{
-            "Room 101", "Room 202", "Room 303"
-    });
-    private final JTextField txtStartDate = new JTextField(10);
-    private final JTextField txtEndDate = new JTextField(10);
-    private final JTextField txtMaxStudent = new JTextField(5);
-    private final JComboBox<String> cboStatus = new JComboBox<>(new String[]{
-            "Planned", "Running", "Finished"
-    });
+    private final ClassService classService;
+    private final CourseService courseService;
+    private final TeacherService teacherService;
+    private final RoomService roomService;
+
+    private JComboBox<Course> cboCourse;
+    private JComboBox<Teacher> cboTeacher;
+    private JComboBox<Room> cboRoom;
+
+    private JTextField txtMaxStudent;
+    private JTextField txtStartDate;
+    private JTextField txtEndDate;
+
+    private JTable table;
+    private DefaultTableModel tableModel;
 
     public ClassPanel() {
-        super(new BorderLayout(8, 8));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        buildUI();
-        loadMockData();
+
+        this.classService = AppContext.classService;
+        this.courseService = AppContext.courseService;
+        this.teacherService = AppContext.teacherService;
+        this.roomService = AppContext.roomService;
+
+        initUI();
+        loadComboData();
+        loadTable();
     }
 
-    private void buildUI() {
-        add(buildActionBar(), BorderLayout.NORTH);
-        add(buildForm(), BorderLayout.CENTER);
+    private void initUI() {
+
+        setLayout(new BorderLayout());
+        setBackground(new Color(245, 247, 250));
+
+        // ===== HEADER =====
+        JLabel lblTitle = new JLabel("LCMS - Class Management");
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblTitle.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
+
+        JPanel header = new JPanel(new BorderLayout());
+        header.setBackground(Color.WHITE);
+        header.add(lblTitle, BorderLayout.WEST);
+
+        add(header, BorderLayout.NORTH);
+
+        // ===== MAIN CONTENT =====
+        JPanel content = new JPanel(new GridLayout(1, 2, 20, 0));
+        content.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        content.setBackground(new Color(245, 247, 250));
+
+        // ================= LEFT CARD (FORM) =================
+        JPanel formCard = new JPanel(new BorderLayout(10, 10));
+        formCard.setBackground(Color.WHITE);
+        formCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220)),
+                BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+
+        JLabel formTitle = new JLabel("Create New Class");
+        formTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
+
+        formCard.add(formTitle, BorderLayout.NORTH);
+
+        JPanel form = new JPanel(new GridLayout(6, 2, 10, 15));
+        form.setBackground(Color.WHITE);
+
+        cboCourse = new JComboBox<>();
+        cboTeacher = new JComboBox<>();
+        cboRoom = new JComboBox<>();
+
+        txtMaxStudent = new JTextField();
+        txtStartDate = new JTextField("2026-03-01");
+        txtEndDate = new JTextField("2026-06-01");
+
+        form.add(new JLabel("Course:"));
+        form.add(cboCourse);
+
+        form.add(new JLabel("Teacher:"));
+        form.add(cboTeacher);
+
+        form.add(new JLabel("Room:"));
+        form.add(cboRoom);
+
+        form.add(new JLabel("Max Student:"));
+        form.add(txtMaxStudent);
+
+        form.add(new JLabel("Start Date:"));
+        form.add(txtStartDate);
+
+        form.add(new JLabel("End Date:"));
+        form.add(txtEndDate);
+
+        formCard.add(form, BorderLayout.CENTER);
+
+        JButton btnCreate = new JButton("Create Class");
+        btnCreate.setBackground(new Color(33, 150, 243));
+        btnCreate.setForeground(Color.WHITE);
+        btnCreate.setFocusPainted(false);
+        btnCreate.setPreferredSize(new Dimension(150, 40));
+        btnCreate.addActionListener(e -> createClass());
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btnPanel.setBackground(Color.WHITE);
+        btnPanel.add(btnCreate);
+
+        formCard.add(btnPanel, BorderLayout.SOUTH);
+
+        // ================= RIGHT CARD (TABLE) =================
+        JPanel tableCard = new JPanel(new BorderLayout(10, 10));
+        tableCard.setBackground(Color.WHITE);
+        tableCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220)),
+                BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+
+        JLabel tableTitle = new JLabel("Class List");
+        tableTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
+
+        tableCard.add(tableTitle, BorderLayout.NORTH);
+
+        tableModel = new DefaultTableModel(
+                new Object[]{"Class Name", "Course", "Teacher", "Room", "Status"},
+                0);
+
+        table = new JTable(tableModel);
+        table.setRowHeight(28);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        tableCard.add(scrollPane, BorderLayout.CENTER);
+
+        content.add(formCard);
+        content.add(tableCard);
+
+        add(content, BorderLayout.CENTER);
     }
 
-    private JComponent buildActionBar() {
-        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
+    private void loadComboData() {
 
-        JButton btnBack = new JButton("Quay lại");
-        JButton btnAdd = new JButton("Thêm lớp");
-        JButton btnSave = new JButton("Lưu");
-        JButton btnDelete = new JButton("Xóa");
-
-        btnBack.addActionListener(e ->
-                JOptionPane.showMessageDialog(this, "Back (mock) - chưa xử lý điều hướng."));
-        btnAdd.addActionListener(e -> clearForm());
-        btnSave.addActionListener(e -> JOptionPane.showMessageDialog(this, "Đã lưu lớp học (mock)."));
-        btnDelete.addActionListener(e -> JOptionPane.showMessageDialog(this, "Đã xóa lớp học (mock)."));
-
-        bar.add(btnBack);
-        bar.add(btnAdd);
-        bar.add(btnSave);
-        bar.add(btnDelete);
-
-        return bar;
+        courseService.findAll().forEach(cboCourse::addItem);
+        teacherService.findAll().forEach(cboTeacher::addItem);
+        roomService.findAll().forEach(cboRoom::addItem);
     }
 
-    private JComponent buildForm() {
-        JPanel wrapper = new JPanel(new BorderLayout());
-        UI.stylePanelBorder(wrapper, "Thông tin lớp học");
+    private void loadTable() {
 
-        JPanel form = new JPanel(new GridBagLayout());
-        GridBagConstraints g = new GridBagConstraints();
-        g.insets = new Insets(6, 10, 6, 10);
-        g.anchor = GridBagConstraints.WEST;
-        g.fill = GridBagConstraints.HORIZONTAL;
+        tableModel.setRowCount(0);
+        List<TeachingClass> list = classService.findAll();
 
-        int r = 0;
-
-        addField(form, g, r, 0, "Mã lớp:", txtClassId);
-        addField(form, g, r, 1, "Tên lớp:", txtClassName);
-
-        r++;
-        addField(form, g, r, 0, "Khóa học:", cboCourse);
-        addField(form, g, r, 1, "Giáo viên:", cboTeacher);
-
-        r++;
-        addField(form, g, r, 0, "Phòng học:", cboRoom);
-        addField(form, g, r, 1, "Sĩ số tối đa:", txtMaxStudent);
-
-        r++;
-        addField(form, g, r, 0, "Ngày bắt đầu:", txtStartDate);
-        addField(form, g, r, 1, "Ngày kết thúc:", txtEndDate);
-
-        r++;
-        addField(form, g, r, 0, "Trạng thái:", cboStatus);
-
-        wrapper.add(form, BorderLayout.CENTER);
-        return wrapper;
+        for (TeachingClass tc : list) {
+            tableModel.addRow(new Object[]{
+                    tc.getClassName(),
+                    tc.getCourse().getCourseName(),
+                    tc.getTeacher().getFullName(),
+                    tc.getRoom() != null ? tc.getRoom().getRoomName() : "",
+                    tc.getStatus()
+            });
+        }
     }
 
-    private void addField(JPanel form, GridBagConstraints g, int row, int col,
-                          String label, JComponent field) {
-        int baseGridX = col * 2;
-        g.gridy = row;
+    private void createClass() {
 
-        g.gridx = baseGridX;
-        g.weightx = 0.0;
-        form.add(new JLabel(label), g);
+        try {
+            Course course = (Course) cboCourse.getSelectedItem();
+            Teacher teacher = (Teacher) cboTeacher.getSelectedItem();
+            Room room = (Room) cboRoom.getSelectedItem();
 
-        g.gridx = baseGridX + 1;
-        g.weightx = 1.0;
-        form.add(field, g);
-    }
+            TeachingClass tc = new TeachingClass();
+            tc.setClassName(course.getCourseName() + "-01");
+            tc.setCourse(course);
+            tc.setTeacher(teacher);
+            tc.setRoom(room);
+            tc.setMaxStudent(Integer.parseInt(txtMaxStudent.getText()));
+            tc.setStartDate(LocalDate.parse(txtStartDate.getText()));
+            tc.setEndDate(LocalDate.parse(txtEndDate.getText()));
+            tc.setStatus(ClassStatus.ACTIVE);
 
-    private void loadMockData() {
-        txtClassId.setText("CL101");
-        txtClassName.setText("IELTS Foundation - A");
-        cboCourse.setSelectedItem("IELTS Foundation");
-        cboTeacher.setSelectedItem("Thay An");
-        cboRoom.setSelectedItem("Room 101");
-        txtStartDate.setText("01/04/2026");
-        txtEndDate.setText("01/07/2026");
-        txtMaxStudent.setText("20");
-        cboStatus.setSelectedItem("Running");
-    }
+            classService.createClass(tc);
 
-    private void clearForm() {
-        txtClassId.setText("");
-        txtClassName.setText("");
-        txtStartDate.setText("");
-        txtEndDate.setText("");
-        txtMaxStudent.setText("");
-        cboCourse.setSelectedIndex(0);
-        cboTeacher.setSelectedIndex(0);
-        cboRoom.setSelectedIndex(0);
-        cboStatus.setSelectedIndex(0);
+            loadTable();
+
+            JOptionPane.showMessageDialog(this, "Created!");
+
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage());
+        }
     }
 }
-
-

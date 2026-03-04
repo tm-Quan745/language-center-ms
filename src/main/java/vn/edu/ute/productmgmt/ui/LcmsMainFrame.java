@@ -34,6 +34,7 @@ public class LcmsMainFrame extends JFrame {
 
     private final List<String> menuItems = new ArrayList<>();
 
+    private JPanel sidebarPanel;
     public LcmsMainFrame(UserAccount user) {
         super("Language Center Management");
         this.currentUser = user;
@@ -57,16 +58,18 @@ public class LcmsMainFrame extends JFrame {
 
     // ===== TOP BAR =====
     private JComponent createTopBar() {
+
         JPanel top = new JPanel(new BorderLayout());
-        top.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        top.setBackground(Color.WHITE);
+        top.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 
         JLabel title = new JLabel("LCMS - Language Center Management");
-        title.setFont(title.getFont().deriveFont(Font.BOLD, 16f));
+        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
 
         JLabel userInfo = new JLabel(
-                "Xin chào: " + currentUser.getUsername()
-                        + " (" + currentUser.getRole() + ")"
+                currentUser.getUsername() + " (" + currentUser.getRole() + ")"
         );
+        userInfo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
         top.add(title, BorderLayout.WEST);
         top.add(userInfo, BorderLayout.EAST);
@@ -74,28 +77,7 @@ public class LcmsMainFrame extends JFrame {
         return top;
     }
 
-    // ===== MAIN AREA =====
-    private JComponent createMainArea() {
-        JPanel main = new JPanel(new BorderLayout());
-
-        menuList = new JList<>();
-        menuList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-        menuList.addListSelectionListener(e -> {
-            if (e.getValueIsAdjusting()) return;
-            String value = menuList.getSelectedValue();
-            if (value != null) {
-                CardLayout cl = (CardLayout) contentPanel.getLayout();
-                cl.show(contentPanel, value);
-            }
-        });
-
-        JScrollPane menuScroll = new JScrollPane(menuList);
-        menuScroll.setPreferredSize(new Dimension(200, 0));
-
-        main.add(menuScroll, BorderLayout.WEST);
-
-        // Add tất cả card (phân quyền sẽ quyết định hiển thị)
+    private void addAllCards() {
         contentPanel.add(studentPanel, "Học viên");
         contentPanel.add(teacherPanel, "Giáo viên");
         contentPanel.add(coursePanel, "Khóa học");
@@ -109,10 +91,53 @@ public class LcmsMainFrame extends JFrame {
         contentPanel.add(invoicePanel, "Hóa đơn");
         contentPanel.add(staffPanel, "Nhân viên");
         contentPanel.add(userAccountPanel, "Tài khoản");
+    }
+    // ===== MAIN AREA =====
+    private JComponent createMainArea() {
+
+        JPanel main = new JPanel(new BorderLayout());
+
+        // ===== SIDEBAR =====
+        JPanel sidebar = new JPanel();
+        sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
+        sidebar.setBackground(new Color(33, 150, 243));
+        sidebar.setPreferredSize(new Dimension(220, 0));
+
+        JScrollPane sidebarScroll = new JScrollPane(sidebar);
+        sidebarScroll.setBorder(null);
+
+        main.add(sidebarScroll, BorderLayout.WEST);
+
+        // ===== CONTENT =====
+        contentPanel.setBackground(new Color(245, 247, 250));
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        addAllCards();
 
         main.add(contentPanel, BorderLayout.CENTER);
 
+        // 🔥 Lưu sidebar để applyAuthorization sử dụng
+        this.sidebarPanel = sidebar;
+
         return main;
+    }
+
+    private JButton createMenuButton(String name) {
+
+        JButton btn = new JButton(name);
+        btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
+        btn.setFocusPainted(false);
+        btn.setBackground(new Color(33, 150, 243));
+        btn.setForeground(Color.WHITE);
+        btn.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        btn.setHorizontalAlignment(SwingConstants.LEFT);
+
+        btn.addActionListener(e -> {
+            CardLayout cl = (CardLayout) contentPanel.getLayout();
+            cl.show(contentPanel, name);
+        });
+
+        return btn;
     }
 
     // ===== MENU BAR =====
@@ -150,36 +175,42 @@ public class LcmsMainFrame extends JFrame {
 
         String role = currentUser.getRole();
 
-        menuItems.clear();
+        sidebarPanel.removeAll();
 
-        // ADMIN: thấy tất cả
         if ("ADMIN".equalsIgnoreCase(role)) {
 
-            addAllMenus();
+            addSidebarButton("Học viên");
+            addSidebarButton("Giáo viên");
+            addSidebarButton("Khóa học");
+            addSidebarButton("Lớp học");
+            addSidebarButton("Ghi danh");
+            addSidebarButton("Thanh toán");
+            addSidebarButton("Lịch học");
+            addSidebarButton("Điểm danh");
+            addSidebarButton("Phòng học");
+            addSidebarButton("Kết quả");
+            addSidebarButton("Hóa đơn");
+            addSidebarButton("Nhân viên");
+            addSidebarButton("Tài khoản");
 
+        } else if ("STAFF".equalsIgnoreCase(role)) {
+
+            addSidebarButton("Học viên");
+            addSidebarButton("Khóa học");
+            addSidebarButton("Lớp học");
+            addSidebarButton("Ghi danh");
+            addSidebarButton("Thanh toán");
+            addSidebarButton("Lịch học");
+            addSidebarButton("Điểm danh");
+            addSidebarButton("Kết quả");
+            addSidebarButton("Hóa đơn");
         }
-        // STAFF: hạn chế
-        else if ("STAFF".equalsIgnoreCase(role)) {
 
-            menuItems.add("Học viên");
-            menuItems.add("Khóa học");
-            menuItems.add("Lớp học");
-            menuItems.add("Ghi danh");
-            menuItems.add("Thanh toán");
-            menuItems.add("Lịch học");
-            menuItems.add("Điểm danh");
-            menuItems.add("Kết quả");
-            menuItems.add("Hóa đơn");
-
-            // Không có:
-            // Nhân viên
-            // Tài khoản
-        }
-
-        menuList.setListData(menuItems.toArray(new String[0]));
-        if (!menuItems.isEmpty()) {
-            menuList.setSelectedIndex(0);
-        }
+        sidebarPanel.revalidate();
+        sidebarPanel.repaint();
+    }
+    private void addSidebarButton(String name) {
+        sidebarPanel.add(createMenuButton(name));
     }
 
     private void addAllMenus() {

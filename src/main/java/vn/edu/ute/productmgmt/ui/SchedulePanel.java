@@ -1,152 +1,159 @@
 package vn.edu.ute.productmgmt.ui;
 
-import javax.swing.*;
-import javax.swing.table.AbstractTableModel;
-import java.awt.*;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.List;
+import vn.edu.ute.productmgmt.config.AppContext;
+import vn.edu.ute.productmgmt.model.*;
+import vn.edu.ute.productmgmt.service.*;
 
-/**
- * Panel danh sách lịch học (Schedule) dùng mock data.
- */
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
+
 public class SchedulePanel extends JPanel {
 
-    private final ScheduleTableModel tableModel = new ScheduleTableModel();
-    private final JLabel bottomInfo = new JLabel("Total sessions: 0");
+    private final ClassService classService;
+    private final ScheduleService scheduleService;
+
+    private JComboBox<TeachingClass> cboClass;
+    private JComboBox<DayOfWeek> cboDay;
+    private JTextField txtStart;
+    private JTextField txtEnd;
+
+    private JTable table;
+    private DefaultTableModel model;
 
     public SchedulePanel() {
-        super(new BorderLayout(8, 8));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        buildUI();
-        loadMockData();
+
+        this.classService = AppContext.classService;
+        this.scheduleService = AppContext.scheduleService;
+
+        initUI();
+        loadClasses();
     }
 
-    private void buildUI() {
-        JPanel top = new JPanel(new BorderLayout(8, 8));
+    private void initUI() {
 
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        left.add(new JLabel("Class:"));
-        left.add(new JComboBox<>(new String[]{"All", "IELTS Foundation - A", "TOEIC 500+ - B"}));
-        left.add(new JLabel("Teacher:"));
-        left.add(new JComboBox<>(new String[]{"All", "Thay An", "Co Binh"}));
-        top.add(left, BorderLayout.WEST);
+        setLayout(new BorderLayout());
+        setBackground(new Color(245, 247, 250));
 
-        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        right.add(new JButton("Add"));
-        right.add(new JButton("Edit"));
-        right.add(new JButton("Delete"));
-        right.add(new JButton("Refresh"));
-        top.add(right, BorderLayout.EAST);
+        // ===== HEADER =====
+        JLabel lblTitle = new JLabel("LCMS - Schedule Management");
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblTitle.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
 
-        JTable table = new JTable(tableModel);
-        UI.styleTable(table);
-        JScrollPane scroll = new JScrollPane(table);
+        JPanel header = new JPanel(new BorderLayout());
+        header.setBackground(Color.WHITE);
+        header.add(lblTitle, BorderLayout.WEST);
 
-        tableModel.setOnDataChangedListener(size ->
-                bottomInfo.setText("Total sessions: " + size)
-        );
+        add(header, BorderLayout.NORTH);
 
-        add(top, BorderLayout.NORTH);
-        add(scroll, BorderLayout.CENTER);
-        add(bottomInfo, BorderLayout.SOUTH);
+        // ===== MAIN CONTENT =====
+        JPanel content = new JPanel(new GridLayout(1, 2, 20, 0));
+        content.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        content.setBackground(new Color(245, 247, 250));
+
+        // ================= LEFT CARD (FORM) =================
+        JPanel formCard = new JPanel(new BorderLayout(10, 10));
+        formCard.setBackground(Color.WHITE);
+        formCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220)),
+                BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+
+        JLabel formTitle = new JLabel("Add Schedule");
+        formTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        formCard.add(formTitle, BorderLayout.NORTH);
+
+        JPanel form = new JPanel(new GridLayout(4, 2, 10, 15));
+        form.setBackground(Color.WHITE);
+
+        cboClass = new JComboBox<>();
+        cboDay = new JComboBox<>(DayOfWeek.values());
+        txtStart = new JTextField("08:00");
+        txtEnd = new JTextField("10:00");
+
+        form.add(new JLabel("Class:"));
+        form.add(cboClass);
+
+        form.add(new JLabel("Day:"));
+        form.add(cboDay);
+
+        form.add(new JLabel("Start Time (HH:mm):"));
+        form.add(txtStart);
+
+        form.add(new JLabel("End Time (HH:mm):"));
+        form.add(txtEnd);
+
+        formCard.add(form, BorderLayout.CENTER);
+
+        JButton btnAdd = new JButton("Add Schedule");
+        btnAdd.setBackground(new Color(76, 175, 80));
+        btnAdd.setForeground(Color.WHITE);
+        btnAdd.setFocusPainted(false);
+        btnAdd.setPreferredSize(new Dimension(150, 40));
+        btnAdd.addActionListener(e -> addSchedule());
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btnPanel.setBackground(Color.WHITE);
+        btnPanel.add(btnAdd);
+
+        formCard.add(btnPanel, BorderLayout.SOUTH);
+
+        // ================= RIGHT CARD (TABLE) =================
+        JPanel tableCard = new JPanel(new BorderLayout(10, 10));
+        tableCard.setBackground(Color.WHITE);
+        tableCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220)),
+                BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+
+        JLabel tableTitle = new JLabel("Schedule List");
+        tableTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        tableCard.add(tableTitle, BorderLayout.NORTH);
+
+        model = new DefaultTableModel(
+                new Object[]{"Day", "Start", "End"}, 0);
+
+        table = new JTable(model);
+        table.setRowHeight(28);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        tableCard.add(scrollPane, BorderLayout.CENTER);
+
+        content.add(formCard);
+        content.add(tableCard);
+
+        add(content, BorderLayout.CENTER);
     }
 
-    private void loadMockData() {
-        List<ScheduleRow> rows = List.of(
-                new ScheduleRow(1, LocalDate.now(), LocalTime.of(18, 0), LocalTime.of(20, 0),
-                        "IELTS Foundation - A", "Room 101", "Thay An"),
-                new ScheduleRow(2, LocalDate.now().plusDays(1), LocalTime.of(18, 0), LocalTime.of(20, 0),
-                        "TOEIC 500+ - B", "Room 202", "Co Binh"),
-                new ScheduleRow(3, LocalDate.now().plusDays(2), LocalTime.of(19, 0), LocalTime.of(21, 0),
-                        "Communication Evening", "Room 303", "Thay Cuong")
-        );
-        tableModel.setData(rows);
+    private void loadClasses() {
+        classService.findAll().forEach(cboClass::addItem);
     }
 
-    // ==== Kiểu dữ liệu & TableModel nội bộ ====
+    private void addSchedule() {
 
-    private static class ScheduleRow {
-        final int id;
-        final LocalDate date;
-        final LocalTime startTime;
-        final LocalTime endTime;
-        final String className;
-        final String room;
-        final String teacher;
+        try {
+            TeachingClass tc = (TeachingClass) cboClass.getSelectedItem();
+            DayOfWeek day = (DayOfWeek) cboDay.getSelectedItem();
 
-        ScheduleRow(int id, LocalDate date, LocalTime startTime, LocalTime endTime,
-                    String className, String room, String teacher) {
-            this.id = id;
-            this.date = date;
-            this.startTime = startTime;
-            this.endTime = endTime;
-            this.className = className;
-            this.room = room;
-            this.teacher = teacher;
-        }
-    }
+            Schedule s = new Schedule();
+            s.setTeachingClass(tc);
+            s.setDayOfWeek(day);
+            s.setStartTime(LocalTime.parse(txtStart.getText()));
+            s.setEndTime(LocalTime.parse(txtEnd.getText()));
 
-    private interface IntConsumer {
-        void accept(int value);
-    }
+            scheduleService.createSchedule(s);
 
-    private static class ScheduleTableModel extends AbstractTableModel {
-        private final String[] columns = {
-                "ID", "Date", "Start time", "End time", "Class", "Room", "Teacher"
-        };
-        private List<ScheduleRow> data = List.of();
-        private IntConsumer onDataChanged;
+            model.addRow(new Object[]{
+                    day,
+                    txtStart.getText(),
+                    txtEnd.getText()
+            });
 
-        void setData(List<ScheduleRow> data) {
-            this.data = data;
-            fireTableDataChanged();
-            if (onDataChanged != null) {
-                onDataChanged.accept(data.size());
-            }
-        }
-
-        void setOnDataChangedListener(IntConsumer listener) {
-            this.onDataChanged = listener;
-        }
-
-        @Override
-        public int getRowCount() {
-            return data.size();
-        }
-
-        @Override
-        public int getColumnCount() {
-            return columns.length;
-        }
-
-        @Override
-        public String getColumnName(int column) {
-            return columns[column];
-        }
-
-        @Override
-        public Object getValueAt(int rowIndex, int columnIndex) {
-            ScheduleRow r = data.get(rowIndex);
-            switch (columnIndex) {
-                case 0:
-                    return r.id;
-                case 1:
-                    return r.date;
-                case 2:
-                    return r.startTime;
-                case 3:
-                    return r.endTime;
-                case 4:
-                    return r.className;
-                case 5:
-                    return r.room;
-                case 6:
-                    return r.teacher;
-                default:
-                    return "";
-            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage());
         }
     }
 }
-

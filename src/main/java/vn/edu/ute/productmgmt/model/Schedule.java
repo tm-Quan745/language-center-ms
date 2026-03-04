@@ -1,7 +1,7 @@
 package vn.edu.ute.productmgmt.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDate;
+import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.UUID;
 
@@ -14,12 +14,13 @@ public class Schedule {
     @Column(name = "schedule_id", updatable = false, nullable = false)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "class_id", nullable = false)
     private TeachingClass teachingClass;
 
-    @Column(nullable = false)
-    private LocalDate date;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "day_of_week", nullable = false, length = 20)
+    private DayOfWeek dayOfWeek;
 
     @Column(name = "start_time", nullable = false)
     private LocalTime startTime;
@@ -27,29 +28,10 @@ public class Schedule {
     @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_id", nullable = false)
-    private Room room;
-
-    public Schedule() {
-    }
-
-    public Schedule(UUID id, TeachingClass teachingClass, LocalDate date,
-                    LocalTime startTime, LocalTime endTime, Room room) {
-        this.id = id;
-        this.teachingClass = teachingClass;
-        this.date = date;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.room = room;
-    }
+    // ===== GETTER & SETTER =====
 
     public UUID getId() {
         return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
     }
 
     public TeachingClass getTeachingClass() {
@@ -60,12 +42,12 @@ public class Schedule {
         this.teachingClass = teachingClass;
     }
 
-    public LocalDate getDate() {
-        return date;
+    public DayOfWeek getDayOfWeek() {
+        return dayOfWeek;
     }
 
-    public void setDate(LocalDate date) {
-        this.date = date;
+    public void setDayOfWeek(DayOfWeek dayOfWeek) {
+        this.dayOfWeek = dayOfWeek;
     }
 
     public LocalTime getStartTime() {
@@ -82,13 +64,5 @@ public class Schedule {
 
     public void setEndTime(LocalTime endTime) {
         this.endTime = endTime;
-    }
-
-    public Room getRoom() {
-        return room;
-    }
-
-    public void setRoom(Room room) {
-        this.room = room;
     }
 }
