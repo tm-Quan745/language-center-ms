@@ -4,6 +4,9 @@ import vn.edu.ute.productmgmt.model.UserAccount;
 import vn.edu.ute.productmgmt.service.AuthService;
 import vn.edu.ute.productmgmt.service.CourseService;
 import vn.edu.ute.productmgmt.service.RoomService;
+import vn.edu.ute.productmgmt.service.StudentService;
+import vn.edu.ute.productmgmt.service.TeacherService;
+import vn.edu.ute.productmgmt.service.StaffService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -20,11 +23,22 @@ public class LcmsLoginFrame extends JFrame {
     private final AuthService authService;
     private final CourseService courseService;
     private final RoomService roomService;
+    private final StudentService studentService;
+    private final TeacherService teacherService;
+    private final StaffService staffService;
 
-    public LcmsLoginFrame(AuthService authService, CourseService courseService, RoomService roomService) {
+    public LcmsLoginFrame(AuthService authService,
+                          CourseService courseService,
+                          RoomService roomService,
+                          StudentService studentService,
+                          TeacherService teacherService,
+                          StaffService staffService) {
         this.authService = authService;
         this.courseService = courseService;
         this.roomService = roomService;
+        this.studentService = studentService;
+        this.teacherService = teacherService;
+        this.staffService = staffService;
 
         setTitle("LCMS - Login");
         setSize(400, 300);
@@ -130,7 +144,8 @@ public class LcmsLoginFrame extends JFrame {
                 );
 
                 // Mở MainFrame và truyền user + services
-                LcmsMainFrame mainFrame = new LcmsMainFrame(user, courseService, roomService);
+                LcmsMainFrame mainFrame = new LcmsMainFrame(user, courseService, roomService,
+                        studentService, teacherService, staffService);
                 mainFrame.setVisible(true);
 
                 dispose(); // đóng login

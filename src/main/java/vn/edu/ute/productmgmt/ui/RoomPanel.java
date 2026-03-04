@@ -48,7 +48,7 @@ public class RoomPanel extends JPanel {
     private JComponent buildActionBar() {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
         JButton btnAdd = new JButton("Thêm mới");
-        JButton btnSave = new JButton("Lưu");
+        JButton btnSave = new JButton("Chỉnh sửa");
         JButton btnDelete = new JButton("Xóa");
         JButton btnRefresh = new JButton("Tải lại");
 
@@ -66,25 +66,7 @@ public class RoomPanel extends JPanel {
 
     private JComponent buildFormAndTable() {
         JPanel wrapper = new JPanel(new BorderLayout(8, 8));
-        UI.stylePanelBorder(wrapper, "Thông tin phòng học");
-
-        JPanel form = new JPanel(new GridBagLayout());
-        GridBagConstraints g = new GridBagConstraints();
-        g.insets = new Insets(6, 10, 6, 10);
-        g.anchor = GridBagConstraints.WEST;
-        g.fill = GridBagConstraints.HORIZONTAL;
-
-        int r = 0;
-        // Hàng 1: Tên phòng, Sức chứa
-        addField(form, g, r, 0, "Tên phòng:", txtRoomName);
-        addField(form, g, r, 1, "Sức chứa:", txtCapacity);
-
-        // Hàng 2: Vị trí, Trạng thái
-        r++;
-        addField(form, g, r, 0, "Vị trí:", txtLocation);
-        addField(form, g, r, 1, "Trạng thái:", cboStatus);
-
-        wrapper.add(form, BorderLayout.NORTH);
+        UI.stylePanelBorder(wrapper, "Danh sách phòng học");
 
         JScrollPane scroll = new JScrollPane(table);
         UI.styleTable(table);
@@ -119,20 +101,9 @@ public class RoomPanel extends JPanel {
         int row = table.getSelectedRow();
         if (row < 0) {
             selectedRoom = null;
-            clearForm();
             return;
         }
         selectedRoom = tableModel.getRoomAt(row);
-        if (selectedRoom != null) {
-            txtRoomName.setText(selectedRoom.getRoomName());
-            txtCapacity.setText(String.valueOf(selectedRoom.getCapacity()));
-            txtLocation.setText(selectedRoom.getLocation() != null ? selectedRoom.getLocation() : "");
-            if (selectedRoom.getStatus() != null) {
-                cboStatus.setSelectedItem(selectedRoom.getStatus());
-            } else {
-                cboStatus.setSelectedItem(ActiveStatus.Active);
-            }
-        }
     }
 
     private void onAdd() {
@@ -163,7 +134,18 @@ public class RoomPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Chọn một phòng để sửa.", "Chưa chọn", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        Room r = formToRoom(selectedRoom.getId());
+        RoomFormDialog.RoomFormData existing = roomToFormData(selectedRoom);
+        RoomFormDialog dialog = new RoomFormDialog(
+                SwingUtilities.getWindowAncestor(this),
+                existing
+        );
+        dialog.setVisible(true);
+        if (!dialog.isSaved()) {
+            return;
+        }
+
+        RoomFormDialog.RoomFormData data = dialog.getResult();
+        Room r = formDataToRoom(data, selectedRoom.getId());
         if (r == null) return;
         try {
             roomService.update(r);
@@ -173,6 +155,15 @@ public class RoomPanel extends JPanel {
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private RoomFormDialog.RoomFormData roomToFormData(Room r) {
+        RoomFormDialog.RoomFormData data = new RoomFormDialog.RoomFormData();
+        data.setName(r.getRoomName());
+        data.setCapacity(String.valueOf(r.getCapacity()));
+        data.setLocation(r.getLocation() != null ? r.getLocation() : "");
+        data.setStatus(r.getStatus());
+        return data;
     }
 
     private void onDelete() {

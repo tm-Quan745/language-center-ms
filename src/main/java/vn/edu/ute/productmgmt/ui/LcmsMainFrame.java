@@ -8,6 +8,9 @@ import vn.edu.ute.productmgmt.repo.jpa.UserAccountRepositoryImpl;
 import vn.edu.ute.productmgmt.service.AuthService;
 import vn.edu.ute.productmgmt.service.CourseService;
 import vn.edu.ute.productmgmt.service.RoomService;
+import vn.edu.ute.productmgmt.service.StudentService;
+import vn.edu.ute.productmgmt.service.TeacherService;
+import vn.edu.ute.productmgmt.service.StaffService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,23 +22,39 @@ public class LcmsMainFrame extends JFrame {
     private final UserAccount currentUser;
     private final CourseService courseService;
     private final RoomService roomService;
+    private final StudentService studentService;
+    private final TeacherService teacherService;
+    private final StaffService staffService;
 
+    private final StudentPanel studentPanel;
+    private final TeacherPanel teacherPanel;
     private final CoursePanel coursePanel;
     private final RoomPanel roomPanel;
-    private final LcmsStaffPanel staffPanel = new LcmsStaffPanel();
+    private final LcmsStaffPanel staffPanel;
 
     private final JPanel contentPanel = new JPanel(new CardLayout());
     private JList<String> menuList;
 
     private final List<String> menuItems = new ArrayList<>();
 
-    public LcmsMainFrame(UserAccount user, CourseService courseService, RoomService roomService) {
+    public LcmsMainFrame(UserAccount user,
+                         CourseService courseService,
+                         RoomService roomService,
+                         StudentService studentService,
+                         TeacherService teacherService,
+                         StaffService staffService) {
         super("Language Center Management");
         this.currentUser = user;
         this.courseService = courseService;
         this.roomService = roomService;
+        this.studentService = studentService;
+        this.teacherService = teacherService;
+        this.staffService = staffService;
+        this.studentPanel = new StudentPanel(studentService);
+        this.teacherPanel = new TeacherPanel(teacherService);
         this.coursePanel = new CoursePanel(courseService);
         this.roomPanel = new RoomPanel(roomService);
+        this.staffPanel = new LcmsStaffPanel(staffService);
 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         buildUI();
@@ -95,6 +114,8 @@ public class LcmsMainFrame extends JFrame {
         main.add(menuScroll, BorderLayout.WEST);
 
         // Add tất cả card (phân quyền sẽ quyết định hiển thị)
+        contentPanel.add(studentPanel, "Học viên");
+        contentPanel.add(teacherPanel, "Giáo viên");
         contentPanel.add(coursePanel, "Khóa học");
         contentPanel.add(roomPanel, "Phòng học");
         contentPanel.add(staffPanel, "Nhân viên");
@@ -119,7 +140,8 @@ public class LcmsMainFrame extends JFrame {
             TransactionManager tx = new TransactionManager();
             AuthService authService = new AuthService(userRepo, tx);
 
-            new LcmsLoginFrame(authService, courseService, roomService).setVisible(true);
+            new LcmsLoginFrame(authService, courseService, roomService,
+                    studentService, teacherService, staffService).setVisible(true);
         });
 
         JMenuItem miExit = new JMenuItem("Exit");
@@ -150,6 +172,7 @@ public class LcmsMainFrame extends JFrame {
         // STAFF: hạn chế
         else if (role == UserRole.Staff) {
 
+            menuItems.add("Học viên");
             menuItems.add("Khóa học");
             menuItems.add("Phòng học");
         }
@@ -161,6 +184,8 @@ public class LcmsMainFrame extends JFrame {
     }
 
     private void addAllMenus() {
+        menuItems.add("Học viên");
+        menuItems.add("Giáo viên");
         menuItems.add("Khóa học");
         menuItems.add("Phòng học");
         menuItems.add("Nhân viên");

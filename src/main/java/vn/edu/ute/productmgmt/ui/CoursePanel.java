@@ -53,7 +53,7 @@ public class CoursePanel extends JPanel {
     private JComponent buildActionBar() {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
         JButton btnAdd = new JButton("Thêm mới");
-        JButton btnSave = new JButton("Lưu");
+        JButton btnSave = new JButton("Chỉnh sửa");
         JButton btnDelete = new JButton("Xóa");
         JButton btnRefresh = new JButton("Tải lại");
 
@@ -71,45 +71,7 @@ public class CoursePanel extends JPanel {
 
     private JComponent buildFormAndTable() {
         JPanel wrapper = new JPanel(new BorderLayout(8, 8));
-        UI.stylePanelBorder(wrapper, "Thông tin khóa học");
-
-        JPanel form = new JPanel(new GridBagLayout());
-        GridBagConstraints g = new GridBagConstraints();
-        g.insets = new Insets(6, 10, 6, 10);
-        g.anchor = GridBagConstraints.WEST;
-        g.fill = GridBagConstraints.HORIZONTAL;
-
-        int r = 0;
-        // Hàng 1: Tên khóa học, Mức phí
-        addField(form, g, r, 0, "Tên khóa học:", txtCourseName);
-        addField(form, g, r, 1, "Mức phí (VNĐ):", txtFee);
-
-        // Hàng 2: Mức độ, Trạng thái
-        r++;
-        addField(form, g, r, 0, "Mức độ:", cboLevel);
-        addField(form, g, r, 1, "Trạng thái:", cboStatus);
-
-        // Hàng 3: Thời lượng + đơn vị
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Thời lượng:"), g);
-        g.gridx = 1;
-        JPanel durationPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-        durationPanel.add(txtDuration);
-        durationPanel.add(cboDurationUnit);
-        form.add(durationPanel, g);
-
-        // Hàng 4: Mô tả
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Mô tả:"), g);
-        g.gridx = 1;
-        JScrollPane descScroll = new JScrollPane(txtDescription);
-        form.add(descScroll, g);
-
-        wrapper.add(form, BorderLayout.NORTH);
+        UI.stylePanelBorder(wrapper, "Danh sách khóa học");
 
         JScrollPane scroll = new JScrollPane(table);
         UI.styleTable(table);
@@ -144,31 +106,9 @@ public class CoursePanel extends JPanel {
         int row = table.getSelectedRow();
         if (row < 0) {
             selectedCourse = null;
-            clearForm();
             return;
         }
         selectedCourse = tableModel.getCourseAt(row);
-        if (selectedCourse != null) {
-            txtCourseName.setText(selectedCourse.getCourseName());
-            txtFee.setText(selectedCourse.getFee() != null ? selectedCourse.getFee().toPlainString() : "");
-            txtDuration.setText(selectedCourse.getDuration() != null ? selectedCourse.getDuration().toString() : "");
-            if (selectedCourse.getDurationUnit() != null) {
-                cboDurationUnit.setSelectedItem(selectedCourse.getDurationUnit());
-            } else {
-                cboDurationUnit.setSelectedItem(DurationUnit.Week);
-            }
-            if (selectedCourse.getLevel() != null) {
-                cboLevel.setSelectedItem(selectedCourse.getLevel());
-            } else {
-                cboLevel.setSelectedItem(null);
-            }
-            if (selectedCourse.getStatus() != null) {
-                cboStatus.setSelectedItem(selectedCourse.getStatus());
-            } else {
-                cboStatus.setSelectedItem(ActiveStatus.Active);
-            }
-            txtDescription.setText(selectedCourse.getDescription() != null ? selectedCourse.getDescription() : "");
-        }
     }
 
     private void onAdd() {
@@ -199,7 +139,18 @@ public class CoursePanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Chọn một khóa học để sửa.", "Chưa chọn", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        Course c = formToCourse(selectedCourse.getId());
+        CourseFormDialog.CourseFormData existing = courseToFormData(selectedCourse);
+        CourseFormDialog dialog = new CourseFormDialog(
+                SwingUtilities.getWindowAncestor(this),
+                existing
+        );
+        dialog.setVisible(true);
+        if (!dialog.isSaved()) {
+            return;
+        }
+
+        CourseFormDialog.CourseFormData data = dialog.getResult();
+        Course c = formDataToCourse(data, selectedCourse.getId());
         if (c == null) return;
         try {
             courseService.update(c);
@@ -209,6 +160,18 @@ public class CoursePanel extends JPanel {
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private CourseFormDialog.CourseFormData courseToFormData(Course c) {
+        CourseFormDialog.CourseFormData data = new CourseFormDialog.CourseFormData();
+        data.setName(c.getCourseName());
+        data.setDescription(c.getDescription());
+        data.setLevel(c.getLevel());
+        data.setDuration(c.getDuration() != null ? c.getDuration().toString() : "");
+        data.setDurationUnit(c.getDurationUnit());
+        data.setFee(c.getFee() != null ? c.getFee().toPlainString() : "");
+        data.setStatus(c.getStatus());
+        return data;
     }
 
     private void onDelete() {

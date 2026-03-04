@@ -62,12 +62,15 @@
 /Users/macpro/Downloads/product-management-jpa-swing-solid_with-stream-dialog_fixed/src/main/java/vn/edu/ute/productmgmt/ui/LcmsLoginFrame.java
 /Users/macpro/Downloads/product-management-jpa-swing-solid_with-stream-dialog_fixed/src/main/java/vn/edu/ute/productmgmt/ui/LcmsMainFrame.java
 /Users/macpro/Downloads/product-management-jpa-swing-solid_with-stream-dialog_fixed/src/main/java/vn/edu/ute/productmgmt/ui/LcmsStaffPanel.java
-/Users/macpro/Downloads/product-management-jpa-swing-solid_with-stream-dialog_fixed/src/main/java/vn/edu/ute/productmgmt/ui/Main.java
 /Users/macpro/Downloads/product-management-jpa-swing-solid_with-stream-dialog_fixed/src/main/java/vn/edu/ute/productmgmt/ui/MainFrame.java
 /Users/macpro/Downloads/product-management-jpa-swing-solid_with-stream-dialog_fixed/src/main/java/vn/edu/ute/productmgmt/ui/ProductFormDialog.java
 /Users/macpro/Downloads/product-management-jpa-swing-solid_with-stream-dialog_fixed/src/main/java/vn/edu/ute/productmgmt/ui/ProductTableModel.java
 /Users/macpro/Downloads/product-management-jpa-swing-solid_with-stream-dialog_fixed/src/main/java/vn/edu/ute/productmgmt/ui/RoomFormDialog.java
 /Users/macpro/Downloads/product-management-jpa-swing-solid_with-stream-dialog_fixed/src/main/java/vn/edu/ute/productmgmt/ui/RoomPanel.java
+/Users/macpro/Downloads/product-management-jpa-swing-solid_with-stream-dialog_fixed/src/main/java/vn/edu/ute/productmgmt/ui/StaffFormDialog.java
 /Users/macpro/Downloads/product-management-jpa-swing-solid_with-stream-dialog_fixed/src/main/java/vn/edu/ute/productmgmt/ui/StreamReportsDialog.java
 /Users/macpro/Downloads/product-management-jpa-swing-solid_with-stream-dialog_fixed/src/main/java/vn/edu/ute/productmgmt/ui/StudentFormDialog.java
+/Users/macpro/Downloads/product-management-jpa-swing-solid_with-stream-dialog_fixed/src/main/java/vn/edu/ute/productmgmt/ui/StudentPanel.java
+/Users/macpro/Downloads/product-management-jpa-swing-solid_with-stream-dialog_fixed/src/main/java/vn/edu/ute/productmgmt/ui/TeacherFormDialog.java
+/Users/macpro/Downloads/product-management-jpa-swing-solid_with-stream-dialog_fixed/src/main/java/vn/edu/ute/productmgmt/ui/TeacherPanel.java
 /Users/macpro/Downloads/product-management-jpa-swing-solid_with-stream-dialog_fixed/src/main/java/vn/edu/ute/productmgmt/ui/UI.java
