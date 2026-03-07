@@ -58,6 +58,25 @@ public class ClassService {
         });
     }
 
+    public TeachingClass findById(UUID id) {
+
+        EntityManager em = Jpa.em();
+        try {
+            return classRepo.findById(em, id);
+        } finally {
+            em.close();
+        }
+    }
+    public TeachingClass findById(String id) {
+        UUID uuid = UUID.fromString(id);
+        EntityManager em = Jpa.em();
+        try {
+            return classRepo.findById(em,uuid);
+        } finally {
+            em.close();
+        }
+    }
+
     // =============================
     // FIND ALL
     // =============================

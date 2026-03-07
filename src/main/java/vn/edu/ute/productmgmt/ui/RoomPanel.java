@@ -9,6 +9,7 @@ import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Panel Phòng học: form (Tên phòng, Sức chứa) + JTable danh sách, ghép RoomService.
@@ -183,7 +184,7 @@ public class RoomPanel extends JPanel {
         }
     }
 
-    private Room formToRoom(Long keepId) {
+    private Room formToRoom(UUID keepId) {
         String name = txtRoomName.getText().trim();
         String capStr = txtCapacity.getText().trim();
         String location = txtLocation.getText().trim();
@@ -214,7 +215,7 @@ public class RoomPanel extends JPanel {
         return r;
     }
 
-    private Room formDataToRoom(RoomFormDialog.RoomFormData data, Long keepId) {
+    private Room formDataToRoom(RoomFormDialog.RoomFormData data, UUID keepId) {
         String name = data.getName() != null ? data.getName().trim() : "";
         String capStr = data.getCapacity() != null ? data.getCapacity().trim() : "";
         if (name.isEmpty()) {

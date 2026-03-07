@@ -27,11 +27,59 @@ public class ScheduleService {
     public void createSchedule(Schedule s) throws Exception {
 
         validate(s);
-
+        System.out.println("Creating schedule: " + s);
         tx.runInTransaction(em -> {
             scheduleRepo.insert(em, s);
             return null;
         });
+        System.out.println("Created schedule: " + s);
+    }
+
+    public void updateSchedule(Schedule s) throws Exception {
+
+        validate(s);
+
+        tx.runInTransaction(em -> {
+            scheduleRepo.update(em, s);
+            return null;
+        });
+    }
+
+    public Schedule findById(UUID id) {
+        EntityManager em = Jpa.em();
+        try {
+            return scheduleRepo.findById(em, id);
+        } finally {
+            em.close();
+        }
+    }
+
+    public Schedule findById(String id) {
+        UUID uuid = UUID.fromString(id);
+        EntityManager em = Jpa.em();
+        try {
+            return scheduleRepo.findById(em, uuid);
+        } finally {
+            em.close();
+        }
+    }
+
+    public void deleteSchedule(UUID id) throws Exception {
+
+        tx.runInTransaction(em -> {
+            scheduleRepo.delete(em, id);
+            return null;
+        });
+    }
+
+    public List<Schedule> findAll() {
+
+        EntityManager em = Jpa.em();
+        try {
+            return scheduleRepo.findAll(em);
+        } finally {
+            em.close();
+        }
     }
 
     // =================================
@@ -58,14 +106,16 @@ public class ScheduleService {
         if (s.getDayOfWeek() == null)
             throw new IllegalArgumentException("Phải chọn thứ");
 
-        if (s.getStartTime().isAfter(s.getEndTime()))
-            throw new IllegalArgumentException("StartTime phải trước EndTime");
+        LocalTime start = s.getStartTime();
+        LocalTime end = s.getEndTime();
 
-        if (s.getStartTime().equals(s.getEndTime()))
-            throw new IllegalArgumentException("Giờ bắt đầu và kết thúc không được trùng");
+        if (start == null || end == null)
+            throw new IllegalArgumentException("Phải nhập giờ học");
 
-        if (s.getStartTime().isBefore(LocalTime.of(6,0)) ||
-                s.getEndTime().isAfter(LocalTime.of(22,0)))
+        if (!start.isBefore(end))
+            throw new IllegalArgumentException("Giờ bắt đầu phải trước giờ kết thúc");
+
+        if (start.isBefore(LocalTime.of(6,0)) || end.isAfter(LocalTime.of(22,0)))
             throw new IllegalArgumentException("Giờ học phải trong khoảng 06:00 - 22:00");
     }
 }

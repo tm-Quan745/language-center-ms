@@ -33,6 +33,11 @@ public class Teacher {
     @Column(length = 20)
     private ActiveStatus status;
 
+    @Override
+    public String toString() {
+        return fullName;
+    }
+
     public Teacher() {
     }
 

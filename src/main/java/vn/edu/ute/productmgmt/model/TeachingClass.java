@@ -46,6 +46,11 @@ public class TeachingClass {
     @OneToMany(mappedBy = "teachingClass", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Schedule> schedules = new ArrayList<>();
 
+    @Override
+    public String toString() {
+        return className;
+    }
+
     // Default Constructor
     public TeachingClass() {}
 

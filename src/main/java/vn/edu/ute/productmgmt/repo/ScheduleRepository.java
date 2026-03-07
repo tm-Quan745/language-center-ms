@@ -12,5 +12,11 @@ public interface ScheduleRepository {
 
     List<Schedule> findByClass(EntityManager em, UUID classId);
 
+    List<Schedule> findAll(EntityManager em);
+
+    Schedule findById(EntityManager em, UUID id);
+
+    void update(EntityManager em, Schedule schedule);
+
     void delete(EntityManager em, UUID id);
 }

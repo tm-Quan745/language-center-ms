@@ -5,6 +5,7 @@ import vn.edu.ute.productmgmt.model.Room;
 import vn.edu.ute.productmgmt.repo.RoomRepository;
 
 import java.util.List;
+import java.util.UUID;
 
 public class JpaRoomRepository implements RoomRepository {
 
@@ -19,7 +20,7 @@ public class JpaRoomRepository implements RoomRepository {
     }
 
     @Override
-    public void delete(EntityManager em, Long id) {
+    public void delete(EntityManager em, UUID id) {
         Room room = em.find(Room.class, id);
         if (room != null) {
             em.remove(room);
@@ -27,7 +28,7 @@ public class JpaRoomRepository implements RoomRepository {
     }
 
     @Override
-    public Room findById(EntityManager em, Long id) {
+    public Room findById(EntityManager em, UUID id) {
         return em.find(Room.class, id);
     }
 

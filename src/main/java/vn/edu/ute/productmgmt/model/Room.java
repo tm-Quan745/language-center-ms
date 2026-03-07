@@ -3,15 +3,16 @@ package vn.edu.ute.productmgmt.model;
 import jakarta.persistence.*;
 import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "rooms", uniqueConstraints = @UniqueConstraint(columnNames = "room_name"))
 public class Room {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "room_id", updatable = false, nullable = false)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "course_id", updatable = false, nullable = false)
+    private UUID id;
 
     @Column(name = "room_name", nullable = false, length = 100)
     private String roomName;
@@ -38,6 +39,11 @@ public class Room {
         updatedAt = LocalDateTime.now();
     }
 
+    @Override
+    public String toString() {
+        return roomName;
+    }
+
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
@@ -46,11 +52,11 @@ public class Room {
     public Room() {
     }
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
