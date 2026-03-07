@@ -6,5 +6,6 @@ package vn.edu.ute.productmgmt.model.enums;
  */
 public enum ActiveStatus {
     Active,
-    Inactive
+    Inactive,
+
 }

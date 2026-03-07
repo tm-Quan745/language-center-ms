@@ -5,6 +5,7 @@ import vn.edu.ute.productmgmt.model.Teacher;
 import vn.edu.ute.productmgmt.repo.TeacherRepository;
 
 import java.util.List;
+import java.util.UUID;
 
 public class JpaTeacherRepository implements TeacherRepository {
 
@@ -14,26 +15,37 @@ public class JpaTeacherRepository implements TeacherRepository {
     }
 
     @Override
-    public void update(EntityManager em, Teacher teacher) {
-        em.merge(teacher);
-    }
-
-    @Override
-    public void delete(EntityManager em, Long id) {
-        Teacher teacher = em.find(Teacher.class, id);
-        if (teacher != null) {
-            em.remove(teacher);
-        }
-    }
-
-    @Override
-    public Teacher findById(EntityManager em, Long id) {
+    public Teacher findById(EntityManager em, UUID id) {
         return em.find(Teacher.class, id);
     }
 
     @Override
     public List<Teacher> findAll(EntityManager em) {
-        return em.createQuery("SELECT t FROM Teacher t ORDER BY t.fullName", Teacher.class)
+        return em.createQuery(
+                "SELECT t FROM Teacher t ORDER BY t.fullName",
+                Teacher.class
+        ).getResultList();
+    }
+
+    @Override
+    public List<Teacher> findByStatus(EntityManager em, String status) {
+        return em.createQuery(
+                        "SELECT t FROM Teacher t WHERE t.status = :status ORDER BY t.fullName",
+                        Teacher.class)
+                .setParameter("status", status)
                 .getResultList();
+    }
+
+    @Override
+    public void update(EntityManager em, Teacher teacher) {
+        em.merge(teacher);
+    }
+
+    @Override
+    public void delete(EntityManager em, UUID id) {
+        Teacher teacher = em.find(Teacher.class, id);
+        if (teacher != null) {
+            em.remove(teacher);
+        }
     }
 }

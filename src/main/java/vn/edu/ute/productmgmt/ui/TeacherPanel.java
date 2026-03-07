@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Panel quản lý giáo viên, ghép với TeacherService.
@@ -236,7 +237,7 @@ public class TeacherPanel extends JPanel {
         return data;
     }
 
-    private Teacher formDataToTeacher(TeacherFormDialog.TeacherFormData data, Long keepId) {
+    private Teacher formDataToTeacher(TeacherFormDialog.TeacherFormData data, UUID keepId) {
         String fullName = data.getFullName() != null ? data.getFullName().trim() : "";
         String phone = data.getPhone() != null ? data.getPhone().trim() : "";
         String email = data.getEmail() != null ? data.getEmail().trim() : "";

@@ -1,28 +1,29 @@
 package vn.edu.ute.productmgmt.model;
 
 import jakarta.persistence.*;
-import vn.edu.ute.productmgmt.model.enums.ClassStatus;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 @Entity
-@Table(name = "classes")
+@Table(name = "teaching_class")
 public class TeachingClass {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "class_id", updatable = false, nullable = false)
-    private Long id;
+    private UUID id;
 
-    @Column(name = "class_name", nullable = false, length = 150)
+    @Column(name = "class_name", nullable = false, length = 100)
     private String className;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "teacher_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "teacher_id", nullable = false)
     private Teacher teacher;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -32,121 +33,75 @@ public class TeachingClass {
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
 
-    @Column(name = "end_date")
+    @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
     @Column(name = "max_student", nullable = false)
-    private int maxStudent = 0;
+    private int maxStudent;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
-    private ClassStatus status = ClassStatus.Planned;
+    private ClassStatus status; // Lưu ý: Kiểu dữ liệu là ClassStatus
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @OneToMany(mappedBy = "teachingClass", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Schedule> schedules = new ArrayList<>();
 
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    // Default Constructor
+    public TeachingClass() {}
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
-    public TeachingClass() {
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
+    // Full Constructor (Đã sửa String status thành ClassStatus status)
+    public TeachingClass(UUID id, String className, Course course, Teacher teacher, Room room,
+                         LocalDate startDate, LocalDate endDate, int maxStudent, ClassStatus status) {
         this.id = id;
-    }
-
-    public String getClassName() {
-        return className;
-    }
-
-    public void setClassName(String className) {
         this.className = className;
-    }
-
-    public Course getCourse() {
-        return course;
-    }
-
-    public void setCourse(Course course) {
         this.course = course;
-    }
-
-    public Teacher getTeacher() {
-        return teacher;
-    }
-
-    public void setTeacher(Teacher teacher) {
         this.teacher = teacher;
-    }
-
-    public Room getRoom() {
-        return room;
-    }
-
-    public void setRoom(Room room) {
         this.room = room;
-    }
-
-    public LocalDate getStartDate() {
-        return startDate;
-    }
-
-    public void setStartDate(LocalDate startDate) {
         this.startDate = startDate;
-    }
-
-    public LocalDate getEndDate() {
-        return endDate;
-    }
-
-    public void setEndDate(LocalDate endDate) {
         this.endDate = endDate;
-    }
-
-    public int getMaxStudent() {
-        return maxStudent;
-    }
-
-    public void setMaxStudent(int maxStudent) {
         this.maxStudent = maxStudent;
-    }
-
-    public ClassStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(ClassStatus status) {
         this.status = status;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    // Business helper methods
+    public void addSchedule(Schedule schedule) {
+        schedules.add(schedule);
+        schedule.setTeachingClass(this);
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+    public void removeSchedule(Schedule schedule) {
+        schedules.remove(schedule);
+        schedule.setTeachingClass(null);
     }
 
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
+    // Getters and Setters
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+    public String getClassName() { return className; }
+    public void setClassName(String className) { this.className = className; }
+
+    public Course getCourse() { return course; }
+    public void setCourse(Course course) { this.course = course; }
+
+    public Teacher getTeacher() { return teacher; }
+    public void setTeacher(Teacher teacher) { this.teacher = teacher; }
+
+    public Room getRoom() { return room; }
+    public void setRoom(Room room) { this.room = room; }
+
+    public LocalDate getStartDate() { return startDate; }
+    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+
+    public LocalDate getEndDate() { return endDate; }
+    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
+
+    public int getMaxStudent() { return maxStudent; }
+    public void setMaxStudent(int maxStudent) { this.maxStudent = maxStudent; }
+
+    public ClassStatus getStatus() { return status; }
+    public void setStatus(ClassStatus status) { this.status = status; }
+
+    public List<Schedule> getSchedules() { return schedules; }
+    public void setSchedules(List<Schedule> schedules) { this.schedules = schedules; }
 }
