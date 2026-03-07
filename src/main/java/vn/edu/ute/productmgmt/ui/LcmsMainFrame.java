@@ -11,6 +11,8 @@ import vn.edu.ute.productmgmt.service.RoomService;
 import vn.edu.ute.productmgmt.service.StudentService;
 import vn.edu.ute.productmgmt.service.TeacherService;
 import vn.edu.ute.productmgmt.service.StaffService;
+import vn.edu.ute.productmgmt.service.EnrollmentService;
+import vn.edu.ute.productmgmt.service.PaymentService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -25,12 +27,16 @@ public class LcmsMainFrame extends JFrame {
     private final StudentService studentService;
     private final TeacherService teacherService;
     private final StaffService staffService;
+    private final EnrollmentService enrollmentService;
+    private final PaymentService paymentService;
 
     private final StudentPanel studentPanel;
     private final TeacherPanel teacherPanel;
     private final CoursePanel coursePanel;
     private final RoomPanel roomPanel;
     private final LcmsStaffPanel staffPanel;
+    private final EnrollmentPanel enrollmentPanel;
+    private final PaymentPanel paymentPanel;
 
     private final JPanel contentPanel = new JPanel(new CardLayout());
     private JList<String> menuList;
@@ -42,7 +48,9 @@ public class LcmsMainFrame extends JFrame {
                          RoomService roomService,
                          StudentService studentService,
                          TeacherService teacherService,
-                         StaffService staffService) {
+                         StaffService staffService,
+                         EnrollmentService enrollmentService,
+                         PaymentService paymentService) {
         super("Language Center Management");
         this.currentUser = user;
         this.courseService = courseService;
@@ -50,11 +58,15 @@ public class LcmsMainFrame extends JFrame {
         this.studentService = studentService;
         this.teacherService = teacherService;
         this.staffService = staffService;
+        this.enrollmentService = enrollmentService;
+        this.paymentService = paymentService;
         this.studentPanel = new StudentPanel(studentService);
         this.teacherPanel = new TeacherPanel(teacherService);
         this.coursePanel = new CoursePanel(courseService);
         this.roomPanel = new RoomPanel(roomService);
         this.staffPanel = new LcmsStaffPanel(staffService);
+        this.enrollmentPanel = new EnrollmentPanel(enrollmentService);
+        this.paymentPanel = new PaymentPanel(paymentService);
 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         buildUI();
@@ -119,6 +131,8 @@ public class LcmsMainFrame extends JFrame {
         contentPanel.add(coursePanel, "Khóa học");
         contentPanel.add(roomPanel, "Phòng học");
         contentPanel.add(staffPanel, "Nhân viên");
+        contentPanel.add(enrollmentPanel, "Ghi danh");
+        contentPanel.add(paymentPanel, "Thanh toán");
 
         main.add(contentPanel, BorderLayout.CENTER);
 
@@ -140,8 +154,16 @@ public class LcmsMainFrame extends JFrame {
             TransactionManager tx = new TransactionManager();
             AuthService authService = new AuthService(userRepo, tx);
 
-            new LcmsLoginFrame(authService, courseService, roomService,
-                    studentService, teacherService, staffService).setVisible(true);
+            new LcmsLoginFrame(
+                    authService,
+                    courseService,
+                    roomService,
+                    studentService,
+                    teacherService,
+                    staffService,
+                    enrollmentService,
+                    paymentService
+            ).setVisible(true);
         });
 
         JMenuItem miExit = new JMenuItem("Exit");
@@ -175,6 +197,8 @@ public class LcmsMainFrame extends JFrame {
             menuItems.add("Học viên");
             menuItems.add("Khóa học");
             menuItems.add("Phòng học");
+            menuItems.add("Ghi danh");
+            menuItems.add("Thanh toán");
         }
 
         menuList.setListData(menuItems.toArray(new String[0]));
@@ -189,5 +213,7 @@ public class LcmsMainFrame extends JFrame {
         menuItems.add("Khóa học");
         menuItems.add("Phòng học");
         menuItems.add("Nhân viên");
+        menuItems.add("Ghi danh");
+        menuItems.add("Thanh toán");
     }
 }

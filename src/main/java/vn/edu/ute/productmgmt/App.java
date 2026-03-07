@@ -3,6 +3,8 @@ package vn.edu.ute.productmgmt;
 import vn.edu.ute.productmgmt.db.TransactionManager;
 import vn.edu.ute.productmgmt.repo.CategoryRepository;
 import vn.edu.ute.productmgmt.repo.CourseRepository;
+import vn.edu.ute.productmgmt.repo.EnrollmentRepository;
+import vn.edu.ute.productmgmt.repo.PaymentRepository;
 import vn.edu.ute.productmgmt.repo.ProductRepository;
 import vn.edu.ute.productmgmt.repo.RoomRepository;
 import vn.edu.ute.productmgmt.repo.StudentRepository;
@@ -11,6 +13,8 @@ import vn.edu.ute.productmgmt.repo.StaffRepository;
 import vn.edu.ute.productmgmt.repo.UserAccountRepository;
 import vn.edu.ute.productmgmt.repo.jpa.JpaCategoryRepository;
 import vn.edu.ute.productmgmt.repo.jpa.JpaCourseRepository;
+import vn.edu.ute.productmgmt.repo.jpa.JpaEnrollmentRepository;
+import vn.edu.ute.productmgmt.repo.jpa.JpaPaymentRepository;
 import vn.edu.ute.productmgmt.repo.jpa.JpaProductRepository;
 import vn.edu.ute.productmgmt.repo.jpa.JpaRoomRepository;
 import vn.edu.ute.productmgmt.repo.jpa.JpaStudentRepository;
@@ -20,6 +24,8 @@ import vn.edu.ute.productmgmt.repo.jpa.UserAccountRepositoryImpl;
 import vn.edu.ute.productmgmt.service.AuthService;
 import vn.edu.ute.productmgmt.service.CategoryService;
 import vn.edu.ute.productmgmt.service.CourseService;
+import vn.edu.ute.productmgmt.service.EnrollmentService;
+import vn.edu.ute.productmgmt.service.PaymentService;
 import vn.edu.ute.productmgmt.service.ProductService;
 import vn.edu.ute.productmgmt.service.RoomService;
 import vn.edu.ute.productmgmt.service.StudentService;
@@ -52,12 +58,24 @@ public class App {
        StudentRepository studentRepo = new JpaStudentRepository();
        TeacherRepository teacherRepo = new JpaTeacherRepository();
        StaffRepository staffRepo = new JpaStaffRepository();
+       EnrollmentRepository enrollmentRepo = new JpaEnrollmentRepository();
+       PaymentRepository paymentRepo = new JpaPaymentRepository();
 
        StudentService studentService = new StudentService(studentRepo, tx);
        TeacherService teacherService = new TeacherService(teacherRepo, tx);
        StaffService staffService = new StaffService(staffRepo, tx);
+       EnrollmentService enrollmentService = new EnrollmentService(enrollmentRepo, tx);
+       PaymentService paymentService = new PaymentService(paymentRepo, tx);
 
-       SwingUtilities.invokeLater(() -> new LcmsLoginFrame(authService, courseService, roomService,
-               studentService, teacherService, staffService).setVisible(true));
+       SwingUtilities.invokeLater(() -> new LcmsLoginFrame(
+               authService,
+               courseService,
+               roomService,
+               studentService,
+               teacherService,
+               staffService,
+               enrollmentService,
+               paymentService
+       ).setVisible(true));
    }
 }

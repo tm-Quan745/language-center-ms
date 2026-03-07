@@ -7,6 +7,8 @@ import vn.edu.ute.productmgmt.service.RoomService;
 import vn.edu.ute.productmgmt.service.StudentService;
 import vn.edu.ute.productmgmt.service.TeacherService;
 import vn.edu.ute.productmgmt.service.StaffService;
+import vn.edu.ute.productmgmt.service.EnrollmentService;
+import vn.edu.ute.productmgmt.service.PaymentService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -26,19 +28,25 @@ public class LcmsLoginFrame extends JFrame {
     private final StudentService studentService;
     private final TeacherService teacherService;
     private final StaffService staffService;
+    private final EnrollmentService enrollmentService;
+    private final PaymentService paymentService;
 
     public LcmsLoginFrame(AuthService authService,
                           CourseService courseService,
                           RoomService roomService,
                           StudentService studentService,
                           TeacherService teacherService,
-                          StaffService staffService) {
+                          StaffService staffService,
+                          EnrollmentService enrollmentService,
+                          PaymentService paymentService) {
         this.authService = authService;
         this.courseService = courseService;
         this.roomService = roomService;
         this.studentService = studentService;
         this.teacherService = teacherService;
         this.staffService = staffService;
+        this.enrollmentService = enrollmentService;
+        this.paymentService = paymentService;
 
         setTitle("LCMS - Login");
         setSize(400, 300);
@@ -144,8 +152,16 @@ public class LcmsLoginFrame extends JFrame {
                 );
 
                 // Mở MainFrame và truyền user + services
-                LcmsMainFrame mainFrame = new LcmsMainFrame(user, courseService, roomService,
-                        studentService, teacherService, staffService);
+                LcmsMainFrame mainFrame = new LcmsMainFrame(
+                        user,
+                        courseService,
+                        roomService,
+                        studentService,
+                        teacherService,
+                        staffService,
+                        enrollmentService,
+                        paymentService
+                );
                 mainFrame.setVisible(true);
 
                 dispose(); // đóng login
