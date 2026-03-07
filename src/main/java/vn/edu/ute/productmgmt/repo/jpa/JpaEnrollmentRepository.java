@@ -2,9 +2,11 @@ package vn.edu.ute.productmgmt.repo.jpa;
 
 import jakarta.persistence.EntityManager;
 import vn.edu.ute.productmgmt.model.Enrollment;
+import vn.edu.ute.productmgmt.model.Student;
 import vn.edu.ute.productmgmt.repo.EnrollmentRepository;
 
 import java.util.List;
+import java.util.UUID;
 
 public class JpaEnrollmentRepository implements EnrollmentRepository {
 
@@ -39,6 +41,17 @@ public class JpaEnrollmentRepository implements EnrollmentRepository {
                                 "JOIN FETCH e.student " +
                                 "JOIN FETCH e.teachingClass",
                         Enrollment.class)
+                .getResultList();
+    }
+
+    @Override
+    public List<Student> findStudentsByClassId(EntityManager em, UUID classId) {
+        return em.createQuery(
+                        "SELECT e.student FROM Enrollment e " +
+                                "WHERE e.teachingClass.id = :classId " +
+                                "ORDER BY e.student.fullName",
+                        Student.class)
+                .setParameter("classId", classId)
                 .getResultList();
     }
 }

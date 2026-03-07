@@ -39,6 +39,8 @@ public class LcmsMainFrame extends JFrame {
     private final ClassPanel classPanel = new ClassPanel();
     private final SchedulePanel schedulePanel = new SchedulePanel();
     private final PaymentPanel paymentPanel;
+    private final AttendancePanel attendancePanel = new AttendancePanel();
+    private final ResultPanel resultpanel = new ResultPanel();
 
     private final JPanel contentPanel = new JPanel(new CardLayout());
     private JList<String> menuList;
@@ -137,6 +139,8 @@ public class LcmsMainFrame extends JFrame {
         contentPanel.add(schedulePanel, "Lịch học");
         contentPanel.add(enrollmentPanel, "Ghi danh");
         contentPanel.add(paymentPanel, "Thanh toán");
+        contentPanel.add(attendancePanel, "Điểm danh");
+        contentPanel.add(resultpanel, "Kết quả học tập");
 
 
         main.add(contentPanel, BorderLayout.CENTER);
@@ -224,5 +228,7 @@ public class LcmsMainFrame extends JFrame {
         menuItems.add("Nhân viên");
         menuItems.add("Ghi danh");
         menuItems.add("Thanh toán");
+        menuItems.add("Điểm danh");
+        menuItems.add("Kết quả học tập");
     }
 }
