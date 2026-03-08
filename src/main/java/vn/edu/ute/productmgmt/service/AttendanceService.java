@@ -7,7 +7,6 @@ import vn.edu.ute.productmgmt.repo.AttendanceRepository;
 import vn.edu.ute.productmgmt.repo.EnrollmentRepository;
 
 import java.util.List;
-import java.util.UUID;
 
 public class AttendanceService {
 
@@ -26,7 +25,7 @@ public class AttendanceService {
     }
 
     // lấy danh sách học viên của lớp
-    public List<Student> getStudentsByClass(UUID classId) {
+    public List<Student> getStudentsByClass(Long classId) {
 
         try {
             return txManager.runInTransaction(

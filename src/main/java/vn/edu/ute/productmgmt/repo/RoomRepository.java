@@ -4,7 +4,6 @@ import jakarta.persistence.EntityManager;
 import vn.edu.ute.productmgmt.model.Room;
 
 import java.util.List;
-import java.util.UUID;
 
 public interface RoomRepository {
 
@@ -12,9 +11,9 @@ public interface RoomRepository {
 
     void update(EntityManager em, Room room);
 
-    void delete(EntityManager em, UUID id);
+    void delete(EntityManager em, Long id);
 
-    Room findById(EntityManager em, UUID id);
+    Room findById(EntityManager em, Long id);
 
     List<Room> findAll(EntityManager em);
 }

@@ -33,9 +33,13 @@ public class JpaPaymentRepository implements PaymentRepository {
 
     @Override
     public List<Payment> findAll(EntityManager em) {
-        // join fetch student để UI có thể đọc tên học viên sau khi EntityManager đóng
-        return em.createQuery("SELECT p FROM Payment p JOIN FETCH p.student", Payment.class)
-                .getResultList();
+        return em.createQuery(
+                "SELECT DISTINCT p FROM Payment p " +
+                "LEFT JOIN FETCH p.student " +
+                "LEFT JOIN FETCH p.enrollment " +
+                "LEFT JOIN FETCH p.invoice",
+                Payment.class
+        ).getResultList();
     }
 }
 

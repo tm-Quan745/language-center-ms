@@ -19,6 +19,10 @@ public class Invoice {
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "promotion_id")
+    private Promotion promotion;
+
     @Column(name = "total_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
@@ -66,6 +70,14 @@ public class Invoice {
 
     public void setStudent(Student student) {
         this.student = student;
+    }
+
+    public Promotion getPromotion() {
+        return promotion;
+    }
+
+    public void setPromotion(Promotion promotion) {
+        this.promotion = promotion;
     }
 
     public BigDecimal getTotalAmount() {

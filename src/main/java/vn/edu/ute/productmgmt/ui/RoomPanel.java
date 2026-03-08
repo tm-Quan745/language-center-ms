@@ -2,6 +2,7 @@ package vn.edu.ute.productmgmt.ui;
 
 import vn.edu.ute.productmgmt.model.Room;
 import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
+import vn.edu.ute.productmgmt.service.BranchService;
 import vn.edu.ute.productmgmt.service.RoomService;
 
 import javax.swing.*;
@@ -9,7 +10,6 @@ import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Panel Phòng học: form (Tên phòng, Sức chứa) + JTable danh sách, ghép RoomService.
@@ -17,6 +17,7 @@ import java.util.UUID;
 public class RoomPanel extends JPanel {
 
     private final RoomService roomService;
+    private final BranchService branchService;
 
     private final JTextField txtRoomName = new JTextField(25);
     private final JTextField txtCapacity = new JTextField(10);
@@ -28,8 +29,9 @@ public class RoomPanel extends JPanel {
     private final JTable table = new JTable(tableModel);
     private Room selectedRoom;
 
-    public RoomPanel(RoomService roomService) {
+    public RoomPanel(RoomService roomService, BranchService branchService) {
         this.roomService = roomService;
+        this.branchService = branchService;
         setLayout(new BorderLayout(8, 8));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         buildUI();
@@ -110,7 +112,8 @@ public class RoomPanel extends JPanel {
     private void onAdd() {
         RoomFormDialog dialog = new RoomFormDialog(
                 SwingUtilities.getWindowAncestor(this),
-                null
+                null,
+                branchService.findAll()
         );
         dialog.setVisible(true);
         if (!dialog.isSaved()) {
@@ -138,7 +141,8 @@ public class RoomPanel extends JPanel {
         RoomFormDialog.RoomFormData existing = roomToFormData(selectedRoom);
         RoomFormDialog dialog = new RoomFormDialog(
                 SwingUtilities.getWindowAncestor(this),
-                existing
+                existing,
+                branchService.findAll()
         );
         dialog.setVisible(true);
         if (!dialog.isSaved()) {
@@ -160,6 +164,7 @@ public class RoomPanel extends JPanel {
 
     private RoomFormDialog.RoomFormData roomToFormData(Room r) {
         RoomFormDialog.RoomFormData data = new RoomFormDialog.RoomFormData();
+        data.setBranchId(r.getBranch() != null && r.getBranch().getId() != null ? r.getBranch().getId().toString() : "");
         data.setName(r.getRoomName());
         data.setCapacity(String.valueOf(r.getCapacity()));
         data.setLocation(r.getLocation() != null ? r.getLocation() : "");
@@ -184,7 +189,7 @@ public class RoomPanel extends JPanel {
         }
     }
 
-    private Room formToRoom(UUID keepId) {
+    private Room formToRoom(Long keepId) {
         String name = txtRoomName.getText().trim();
         String capStr = txtCapacity.getText().trim();
         String location = txtLocation.getText().trim();
@@ -215,7 +220,7 @@ public class RoomPanel extends JPanel {
         return r;
     }
 
-    private Room formDataToRoom(RoomFormDialog.RoomFormData data, UUID keepId) {
+    private Room formDataToRoom(RoomFormDialog.RoomFormData data, Long keepId) {
         String name = data.getName() != null ? data.getName().trim() : "";
         String capStr = data.getCapacity() != null ? data.getCapacity().trim() : "";
         if (name.isEmpty()) {
@@ -237,6 +242,13 @@ public class RoomPanel extends JPanel {
         }
         Room r = new Room();
         if (keepId != null) r.setId(keepId);
+        if (data.getBranchId() != null && !data.getBranchId().trim().isEmpty()) {
+            try {
+                r.setBranch(branchService.findById(Long.parseLong(data.getBranchId().trim())));
+            } catch (Exception ignored) { }
+        } else {
+            r.setBranch(null);
+        }
         r.setRoomName(name);
         r.setCapacity(capacity);
         r.setLocation(data.getLocation());
@@ -259,7 +271,7 @@ public class RoomPanel extends JPanel {
     }
 
     private static class RoomTableModel extends AbstractTableModel {
-        private final String[] columns = {"Tên phòng", "Sức chứa", "Vị trí", "Trạng thái"};
+        private final String[] columns = {"Tên phòng", "Chi nhánh", "Sức chứa", "Vị trí", "Trạng thái"};
         private List<Room> data = new ArrayList<>();
 
         void setData(List<Room> data) {
@@ -286,9 +298,10 @@ public class RoomPanel extends JPanel {
             Room r = data.get(row);
             switch (col) {
                 case 0: return r.getRoomName();
-                case 1: return r.getCapacity();
-                case 2: return r.getLocation() != null ? r.getLocation() : "";
-                case 3: return r.getStatus() != null ? r.getStatus().name() : "";
+                case 1: return r.getBranch() != null ? r.getBranch().getBranchName() : "";
+                case 2: return r.getCapacity();
+                case 3: return r.getLocation() != null ? r.getLocation() : "";
+                case 4: return r.getStatus() != null ? r.getStatus().name() : "";
                 default: return "";
             }
         }

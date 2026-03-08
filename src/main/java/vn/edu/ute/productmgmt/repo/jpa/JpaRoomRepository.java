@@ -5,7 +5,6 @@ import vn.edu.ute.productmgmt.model.Room;
 import vn.edu.ute.productmgmt.repo.RoomRepository;
 
 import java.util.List;
-import java.util.UUID;
 
 public class JpaRoomRepository implements RoomRepository {
 
@@ -20,7 +19,7 @@ public class JpaRoomRepository implements RoomRepository {
     }
 
     @Override
-    public void delete(EntityManager em, UUID id) {
+    public void delete(EntityManager em, Long id) {
         Room room = em.find(Room.class, id);
         if (room != null) {
             em.remove(room);
@@ -28,13 +27,15 @@ public class JpaRoomRepository implements RoomRepository {
     }
 
     @Override
-    public Room findById(EntityManager em, UUID id) {
+    public Room findById(EntityManager em, Long id) {
         return em.find(Room.class, id);
     }
 
     @Override
     public List<Room> findAll(EntityManager em) {
-        return em.createQuery("SELECT r FROM Room r", Room.class)
-                .getResultList();
+        return em.createQuery(
+                "SELECT DISTINCT r FROM Room r LEFT JOIN FETCH r.branch ORDER BY r.roomName",
+                Room.class
+        ).getResultList();
     }
 }

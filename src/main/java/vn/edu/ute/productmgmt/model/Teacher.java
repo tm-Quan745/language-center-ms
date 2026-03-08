@@ -4,16 +4,15 @@ import jakarta.persistence.*;
 import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
 
 import java.time.LocalDate;
-import java.util.UUID;
 
 @Entity
-@Table(name = "teacher")
+@Table(name = "teachers")
 public class Teacher {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "teacher_id", updatable = false, nullable = false)
-    private UUID id;
+    private Long id;
 
     @Column(name = "full_name", nullable = false, length = 150)
     private String fullName;
@@ -41,7 +40,7 @@ public class Teacher {
     public Teacher() {
     }
 
-    public Teacher(UUID id, String fullName, String phone, String email,
+    public Teacher(Long id, String fullName, String phone, String email,
                    String specialty, LocalDate hireDate, ActiveStatus status) {
         this.id = id;
         this.fullName = fullName;
@@ -52,11 +51,11 @@ public class Teacher {
         this.status = status;
     }
 
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 

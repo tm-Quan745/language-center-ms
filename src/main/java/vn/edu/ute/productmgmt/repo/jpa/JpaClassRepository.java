@@ -23,10 +23,11 @@ public class JpaClassRepository implements ClassRepository {
     @Override
     public List<TeachingClass> findAll(EntityManager em) {
         return em.createQuery(
-                "SELECT tc FROM TeachingClass tc " +
+                "SELECT DISTINCT tc FROM TeachingClass tc " +
                         "LEFT JOIN FETCH tc.course " +
                         "LEFT JOIN FETCH tc.teacher " +
-                        "LEFT JOIN FETCH tc.room",
+                        "LEFT JOIN FETCH tc.room " +
+                        "LEFT JOIN FETCH tc.branch",
                 TeachingClass.class
         ).getResultList();
     }

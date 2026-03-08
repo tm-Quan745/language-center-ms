@@ -20,6 +20,9 @@ public class AppContext {
     private static final JpaAttendanceRepository attendanceRepo = new JpaAttendanceRepository();
     private static final JpaResultRepository resultRepo = new JpaResultRepository();
     private static final JpaEnrollmentRepository enrollmentRepo = new JpaEnrollmentRepository();
+    private static final JpaBranchRepository branchRepo = new JpaBranchRepository();
+    private static final JpaPlacementTestRepository placementTestRepo = new JpaPlacementTestRepository();
+    private static final JpaNotificationRepository notificationRepo = new JpaNotificationRepository();
 
     // ===== Service =====
     public static final CourseService courseService =
@@ -42,4 +45,10 @@ public class AppContext {
             new ResultService(resultRepo, tx);
     public static final EnrollmentService enrollmentService =
             new EnrollmentService(enrollmentRepo, tx);
+    public static final BranchService branchService =
+            new BranchService(branchRepo, tx);
+    public static final PlacementTestService placementTestService =
+            new PlacementTestService(placementTestRepo, tx);
+    public static final NotificationService notificationService =
+            new NotificationService(notificationRepo, tx);
 }

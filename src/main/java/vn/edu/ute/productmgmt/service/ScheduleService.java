@@ -6,9 +6,9 @@ import vn.edu.ute.productmgmt.model.Schedule;
 import vn.edu.ute.productmgmt.repo.ScheduleRepository;
 
 import jakarta.persistence.EntityManager;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.UUID;
 
 public class ScheduleService {
 
@@ -27,12 +27,10 @@ public class ScheduleService {
     public void createSchedule(Schedule s) throws Exception {
 
         validate(s);
-        System.out.println("Creating schedule: " + s);
         tx.runInTransaction(em -> {
             scheduleRepo.insert(em, s);
             return null;
         });
-        System.out.println("Created schedule: " + s);
     }
 
     public void updateSchedule(Schedule s) throws Exception {
@@ -45,7 +43,7 @@ public class ScheduleService {
         });
     }
 
-    public Schedule findById(UUID id) {
+    public Schedule findById(Long id) {
         EntityManager em = Jpa.em();
         try {
             return scheduleRepo.findById(em, id);
@@ -54,17 +52,7 @@ public class ScheduleService {
         }
     }
 
-    public Schedule findById(String id) {
-        UUID uuid = UUID.fromString(id);
-        EntityManager em = Jpa.em();
-        try {
-            return scheduleRepo.findById(em, uuid);
-        } finally {
-            em.close();
-        }
-    }
-
-    public void deleteSchedule(UUID id) throws Exception {
+    public void deleteSchedule(Long id) throws Exception {
 
         tx.runInTransaction(em -> {
             scheduleRepo.delete(em, id);
@@ -85,7 +73,7 @@ public class ScheduleService {
     // =================================
     // FIND BY CLASS
     // =================================
-    public List<Schedule> findByClass(UUID classId) {
+    public List<Schedule> findByClass(Long classId) {
 
         EntityManager em = Jpa.em();
         try {
@@ -103,8 +91,9 @@ public class ScheduleService {
         if (s.getTeachingClass() == null)
             throw new IllegalArgumentException("Phải chọn lớp");
 
-        if (s.getDayOfWeek() == null)
-            throw new IllegalArgumentException("Phải chọn thứ");
+        LocalDate study = s.getStudyDate();
+        if (study == null)
+            throw new IllegalArgumentException("Phải nhập ngày học (study_date)");
 
         LocalTime start = s.getStartTime();
         LocalTime end = s.getEndTime();

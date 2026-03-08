@@ -10,25 +10,26 @@ import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.RoundRectangle2D;
-import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.UUID;
 
 public class SchedulePanel extends JPanel {
 
     // ── Services ──────────────────────────────────────────────────────────────
     private final ClassService    classService;
     private final ScheduleService scheduleService;
+    private final RoomService     roomService;
 
     // ── Form fields ───────────────────────────────────────────────────────────
     private JComboBox<TeachingClass> cboClass;
-    private JComboBox<DayOfWeek>     cboDay;
+    private JComboBox<Room>          cboRoom;
+    private JTextField               txtDate;
     private JTextField               txtStart;
     private JTextField               txtEnd;
 
-    /** UUID of schedule being edited; null = create mode */
-    private UUID editingId = null;
+    /** ID of schedule being edited; null = create mode */
+    private Long editingId = null;
 
     // ── Form state ────────────────────────────────────────────────────────────
     private JLabel  lblFormTitle;
@@ -68,6 +69,7 @@ public class SchedulePanel extends JPanel {
     public SchedulePanel() {
         this.classService    = AppContext.classService;
         this.scheduleService = AppContext.scheduleService;
+        this.roomService     = AppContext.roomService;
 
         initUI();
         loadComboData();
@@ -116,12 +118,8 @@ public class SchedulePanel extends JPanel {
         card.add(lblFormTitle, BorderLayout.NORTH);
 
         cboClass = styledCombo();
-        cboDay   = new JComboBox<>(DayOfWeek.values());
-        cboDay.setFont(FONT_INPUT);
-        cboDay.setBackground(new Color(0xF8F9FA));
-        cboDay.setBorder(new LineBorder(BORDER_CLR, 1, true));
-        cboDay.setPreferredSize(new Dimension(0, 36));
-
+        cboRoom  = styledCombo();
+        txtDate  = styledField("2026-03-10");
         txtStart = styledField("08:00");
         txtEnd   = styledField("10:00");
 
@@ -130,7 +128,9 @@ public class SchedulePanel extends JPanel {
         fields.setLayout(new BoxLayout(fields, BoxLayout.Y_AXIS));
         fields.add(fieldBlock("Class",            cboClass));
         fields.add(Box.createVerticalStrut(10));
-        fields.add(fieldBlock("Day of Week",       cboDay));
+        fields.add(fieldBlock("Room (optional)",  cboRoom));
+        fields.add(Box.createVerticalStrut(10));
+        fields.add(fieldBlock("Study Date (yyyy-MM-dd)", txtDate));
         fields.add(Box.createVerticalStrut(10));
         fields.add(fieldBlock("Start Time (HH:mm)", txtStart));
         fields.add(Box.createVerticalStrut(10));
@@ -172,8 +172,8 @@ public class SchedulePanel extends JPanel {
         header.add(toolbar, BorderLayout.EAST);
         card.add(header, BorderLayout.NORTH);
 
-        // col 0 = hidden UUID
-        String[] cols = {"id", "Class", "Day", "Start", "End"};
+        // col 0 = hidden ID
+        String[] cols = {"id", "Class", "Room", "Date", "Start", "End"};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -262,6 +262,8 @@ public class SchedulePanel extends JPanel {
     private void loadComboData() {
         cboClass.removeAllItems();
         classService.findAll().forEach(cboClass::addItem);
+        cboRoom.removeAllItems();
+        roomService.findAll().forEach(cboRoom::addItem);
     }
 
     private void loadTable() {
@@ -269,11 +271,12 @@ public class SchedulePanel extends JPanel {
         List<Schedule> list = scheduleService.findAll();
         for (Schedule s : list) {
             tableModel.addRow(new Object[]{
-                    s.getId(),                                    // col 0 (hidden UUID)
+                    s.getId(),                                    // col 0 (hidden ID)
                     s.getTeachingClass().getClassName(),          // col 1
-                    s.getDayOfWeek(),                             // col 2
-                    s.getStartTime(),                             // col 3
-                    s.getEndTime()                                // col 4
+                    s.getRoom() != null ? s.getRoom().getRoomName() : "", // col 2
+                    s.getStudyDate(),                             // col 3
+                    s.getStartTime(),                             // col 4
+                    s.getEndTime()                                // col 5
             });
         }
         lblStatus.setText("Total: " + list.size() + " schedules");
@@ -284,14 +287,15 @@ public class SchedulePanel extends JPanel {
         int row = table.getSelectedRow();
         if (row < 0) return;
 
-        UUID id = (UUID) tableModel.getValueAt(row, 0);
+        Long id = (Long) tableModel.getValueAt(row, 0);
         Schedule s = scheduleService.findById(id);
         if (s == null) return;
 
         editingId = id;
 
         selectComboItem(cboClass, s.getTeachingClass());
-        cboDay.setSelectedItem(s.getDayOfWeek());
+        selectComboItem(cboRoom,  s.getRoom());
+        txtDate.setText(s.getStudyDate() != null ? s.getStudyDate().toString() : "");
         txtStart.setText(s.getStartTime().toString());
         txtEnd.setText(s.getEndTime().toString());
 
@@ -306,7 +310,8 @@ public class SchedulePanel extends JPanel {
     private void submitForm() {
         try {
             TeachingClass tc  = (TeachingClass) cboClass.getSelectedItem();
-            DayOfWeek     day = (DayOfWeek)     cboDay.getSelectedItem();
+            Room         room = (Room)         cboRoom.getSelectedItem();
+            LocalDate     date = LocalDate.parse(txtDate.getText().trim());
 
             LocalTime start = LocalTime.parse(txtStart.getText().trim());
             LocalTime end   = LocalTime.parse(txtEnd.getText().trim());
@@ -318,7 +323,8 @@ public class SchedulePanel extends JPanel {
                 // ── CREATE ──
                 Schedule s = new Schedule();
                 s.setTeachingClass(tc);
-                s.setDayOfWeek(day);
+                s.setRoom(room);
+                s.setStudyDate(date);
                 s.setStartTime(start);
                 s.setEndTime(end);
                 scheduleService.createSchedule(s);
@@ -329,7 +335,8 @@ public class SchedulePanel extends JPanel {
                 Schedule s = scheduleService.findById(editingId);
                 if (s == null) throw new IllegalStateException("Schedule not found (ID " + editingId + ").");
                 s.setTeachingClass(tc);
-                s.setDayOfWeek(day);
+                s.setRoom(room);
+                s.setStudyDate(date);
                 s.setStartTime(start);
                 s.setEndTime(end);
                 scheduleService.updateSchedule(s);  // adjust to your actual service method
@@ -348,10 +355,10 @@ public class SchedulePanel extends JPanel {
         int row = table.getSelectedRow();
         if (row < 0) { showToast("Please select a schedule to delete.", true); return; }
 
-        UUID id       = (UUID) tableModel.getValueAt(row, 0);
-        String dayLabel = tableModel.getValueAt(row, 2).toString()
-                + " " + tableModel.getValueAt(row, 3)
-                + "–" + tableModel.getValueAt(row, 4);
+        Long id       = (Long) tableModel.getValueAt(row, 0);
+        String dayLabel = tableModel.getValueAt(row, 3).toString()
+                + " " + tableModel.getValueAt(row, 4)
+                + "–" + tableModel.getValueAt(row, 5);
 
         int confirm = JOptionPane.showConfirmDialog(
                 this,
@@ -380,7 +387,8 @@ public class SchedulePanel extends JPanel {
         btnCancel.setVisible(false);
 
         if (cboClass.getItemCount() > 0) cboClass.setSelectedIndex(0);
-        cboDay.setSelectedIndex(0);
+        cboRoom.setSelectedItem(null);
+        txtDate.setText("2026-03-10");
         txtStart.setText("08:00");
         txtEnd.setText("10:00");
 

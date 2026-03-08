@@ -3,16 +3,19 @@ package vn.edu.ute.productmgmt.model;
 import jakarta.persistence.*;
 import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "rooms", uniqueConstraints = @UniqueConstraint(columnNames = "room_name"))
 public class Room {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "course_id", updatable = false, nullable = false)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "room_id", updatable = false, nullable = false)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "branch_id")
+    private Branch branch;
 
     @Column(name = "room_name", nullable = false, length = 100)
     private String roomName;
@@ -52,12 +55,20 @@ public class Room {
     public Room() {
     }
 
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
+    }
+
+    public Branch getBranch() {
+        return branch;
+    }
+
+    public void setBranch(Branch branch) {
+        this.branch = branch;
     }
 
     public String getRoomName() {

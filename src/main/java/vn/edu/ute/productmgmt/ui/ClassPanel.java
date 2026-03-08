@@ -2,6 +2,7 @@ package vn.edu.ute.productmgmt.ui;
 
 import vn.edu.ute.productmgmt.config.AppContext;
 import vn.edu.ute.productmgmt.model.*;
+import vn.edu.ute.productmgmt.model.enums.ClassStatus;
 import vn.edu.ute.productmgmt.service.*;
 
 import javax.swing.*;
@@ -21,11 +22,13 @@ public class ClassPanel extends JPanel {
     private final CourseService  courseService;
     private final TeacherService teacherService;
     private final RoomService    roomService;
+    private final BranchService  branchService;
 
     // ── Form fields ───────────────────────────────────────────────────────────
     private JComboBox<Course>   cboCourse;
     private JComboBox<Teacher>  cboTeacher;
     private JComboBox<Room>     cboRoom;
+    private JComboBox<Branch>   cboBranch;
     private JTextField          txtMaxStudent;
     private JTextField          txtStartDate;
     private JTextField          txtEndDate;
@@ -75,6 +78,7 @@ public class ClassPanel extends JPanel {
         this.courseService  = AppContext.courseService;
         this.teacherService = AppContext.teacherService;
         this.roomService    = AppContext.roomService;
+        this.branchService  = AppContext.branchService;
 
         initUI();
         loadComboData();
@@ -125,6 +129,7 @@ public class ClassPanel extends JPanel {
         cboCourse     = styledCombo();
         cboTeacher    = styledCombo();
         cboRoom       = styledCombo();
+        cboBranch     = styledCombo();
         txtMaxStudent = styledField("e.g. 40");
         txtStartDate  = styledField("2026-03-01");
         txtEndDate    = styledField("2026-06-01");
@@ -137,6 +142,8 @@ public class ClassPanel extends JPanel {
         fields.add(fieldBlock("Teacher",      cboTeacher));
         fields.add(Box.createVerticalStrut(10));
         fields.add(fieldBlock("Room",         cboRoom));
+        fields.add(Box.createVerticalStrut(10));
+        fields.add(fieldBlock("Branch",       cboBranch));
         fields.add(Box.createVerticalStrut(10));
         fields.add(fieldBlock("Max Students", txtMaxStudent));
         fields.add(Box.createVerticalStrut(10));
@@ -180,7 +187,7 @@ public class ClassPanel extends JPanel {
         card.add(header, BorderLayout.NORTH);
 
         // col 0 = hidden ID
-        String[] cols = {"id", "Class", "Course", "Teacher", "Room", "Status"};
+        String[] cols = {"id", "Class", "Course", "Teacher", "Room", "Branch", "Status"};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -277,10 +284,12 @@ public class ClassPanel extends JPanel {
         cboCourse.removeAllItems();
         cboTeacher.removeAllItems();
         cboRoom.removeAllItems();
+        cboBranch.removeAllItems();
+        cboBranch.addItem(null);
         courseService.findAll().forEach(cboCourse::addItem);
         teacherService.findAll().forEach(cboTeacher::addItem);
         roomService.findAll().forEach(cboRoom::addItem);
-        System.out.println(courseService.findAll().size());
+        branchService.findAll().forEach(cboBranch::addItem);
     }
 
     private void loadTable() {
@@ -288,11 +297,12 @@ public class ClassPanel extends JPanel {
         List<TeachingClass> list = classService.findAll();
         for (TeachingClass tc : list) {
             tableModel.addRow(new Object[]{
-                    tc.getId(),                                              // col 0 (hidden UUID)
+                    tc.getId(),                                              // col 0 (hidden)
                     tc.getClassName(),                                       // col 1
-                    tc.getCourse().getCourseName(),
-                    tc.getTeacher().getFullName(),
+                    tc.getCourse() != null ? tc.getCourse().getCourseName() : "—",
+                    tc.getTeacher() != null ? tc.getTeacher().getFullName() : "—",
                     tc.getRoom() != null ? tc.getRoom().getRoomName() : "—",
+                    tc.getBranch() != null ? tc.getBranch().getBranchName() : "—",
                     tc.getStatus()
             });
         }
@@ -313,6 +323,8 @@ public class ClassPanel extends JPanel {
         selectComboItem(cboCourse,  tc.getCourse());
         selectComboItem(cboTeacher, tc.getTeacher());
         selectComboItem(cboRoom,    tc.getRoom());
+        if (tc.getBranch() == null) cboBranch.setSelectedIndex(0);
+        else selectComboItem(cboBranch, tc.getBranch());
         txtMaxStudent.setText(String.valueOf(tc.getMaxStudent()));
         txtStartDate.setText(tc.getStartDate().toString());
         txtEndDate.setText(tc.getEndDate().toString());
@@ -334,6 +346,7 @@ public class ClassPanel extends JPanel {
             if (txtMaxStudent.getText().isBlank())
                 throw new IllegalArgumentException("Max students cannot be empty.");
 
+            Branch branch = (Branch) cboBranch.getSelectedItem();
             if (editingId == null) {
                 // ── CREATE ──
                 TeachingClass tc = new TeachingClass();
@@ -341,10 +354,11 @@ public class ClassPanel extends JPanel {
                 tc.setCourse(course);
                 tc.setTeacher(teacher);
                 tc.setRoom(room);
+                tc.setBranch(branch);
                 tc.setMaxStudent(Integer.parseInt(txtMaxStudent.getText().trim()));
                 tc.setStartDate(LocalDate.parse(txtStartDate.getText().trim()));
                 tc.setEndDate(LocalDate.parse(txtEndDate.getText().trim()));
-                tc.setStatus(ClassStatus.ACTIVE);
+                tc.setStatus(ClassStatus.Open);
                 classService.createClass(tc);
                 showToast("Class created successfully.", false);
 
@@ -355,6 +369,7 @@ public class ClassPanel extends JPanel {
                 tc.setCourse(course);
                 tc.setTeacher(teacher);
                 tc.setRoom(room);
+                tc.setBranch(branch);
                 tc.setMaxStudent(Integer.parseInt(txtMaxStudent.getText().trim()));
                 tc.setStartDate(LocalDate.parse(txtStartDate.getText().trim()));
                 tc.setEndDate(LocalDate.parse(txtEndDate.getText().trim()));
@@ -406,6 +421,7 @@ public class ClassPanel extends JPanel {
         if (cboCourse.getItemCount()  > 0) cboCourse.setSelectedIndex(0);
         if (cboTeacher.getItemCount() > 0) cboTeacher.setSelectedIndex(0);
         if (cboRoom.getItemCount()    > 0) cboRoom.setSelectedIndex(0);
+        if (cboBranch.getItemCount()  > 0) cboBranch.setSelectedIndex(0);
 
         txtMaxStudent.setText("");
         txtStartDate.setText("2026-03-01");

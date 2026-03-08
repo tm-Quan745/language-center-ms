@@ -9,7 +9,6 @@ import vn.edu.ute.productmgmt.repo.TeacherRepository;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
 public class TeacherService {
 
@@ -46,7 +45,7 @@ public class TeacherService {
     }
 
 
-    public void delete(UUID id) throws Exception {
+    public void delete(Long id) throws Exception {
 
         tx.runInTransaction(em -> {
             teacherRepo.delete(em, id);

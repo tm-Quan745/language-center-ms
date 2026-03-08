@@ -6,16 +6,15 @@ import vn.edu.ute.productmgmt.model.enums.CourseLevel;
 import vn.edu.ute.productmgmt.model.enums.DurationUnit;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "courses")
 public class Course {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "course_id", updatable = false, nullable = false)
-    private UUID id;
+    private Long id;
 
     @Column(name = "course_name", nullable = false, length = 200)
     private String courseName;
@@ -66,11 +65,11 @@ public class Course {
     public Course() {
     }
 
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 

@@ -8,7 +8,6 @@ import vn.edu.ute.productmgmt.repo.CourseRepository;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 
 public class CourseService {
 
@@ -49,7 +48,7 @@ public class CourseService {
     // ========================
     // DELETE
     // ========================
-    public void delete(UUID id) throws Exception {
+    public void delete(Long id) throws Exception {
         tx.runInTransaction(em -> {
             courseRepo.delete(em, id);
             return null;

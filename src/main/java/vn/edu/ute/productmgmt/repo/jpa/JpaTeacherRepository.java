@@ -5,7 +5,6 @@ import vn.edu.ute.productmgmt.model.Teacher;
 import vn.edu.ute.productmgmt.repo.TeacherRepository;
 
 import java.util.List;
-import java.util.UUID;
 
 public class JpaTeacherRepository implements TeacherRepository {
 
@@ -15,7 +14,7 @@ public class JpaTeacherRepository implements TeacherRepository {
     }
 
     @Override
-    public Teacher findById(EntityManager em, UUID id) {
+    public Teacher findById(EntityManager em, Long id) {
         return em.find(Teacher.class, id);
     }
 
@@ -42,7 +41,7 @@ public class JpaTeacherRepository implements TeacherRepository {
     }
 
     @Override
-    public void delete(EntityManager em, UUID id) {
+    public void delete(EntityManager em, Long id) {
         Teacher teacher = em.find(Teacher.class, id);
         if (teacher != null) {
             em.remove(teacher);

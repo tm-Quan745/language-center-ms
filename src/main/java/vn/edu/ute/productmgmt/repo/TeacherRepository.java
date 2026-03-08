@@ -4,13 +4,12 @@ import jakarta.persistence.EntityManager;
 import vn.edu.ute.productmgmt.model.Teacher;
 
 import java.util.List;
-import java.util.UUID;
 
 public interface TeacherRepository {
 
     void insert(EntityManager em, Teacher teacher);
 
-    Teacher findById(EntityManager em, UUID id);
+    Teacher findById(EntityManager em, Long id);
 
     List<Teacher> findAll(EntityManager em);
 
@@ -18,5 +17,5 @@ public interface TeacherRepository {
 
     void update(EntityManager em, Teacher teacher);
 
-    void delete(EntityManager em, UUID id);
+    void delete(EntityManager em, Long id);
 }

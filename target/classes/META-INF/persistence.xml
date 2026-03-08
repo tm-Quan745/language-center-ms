@@ -5,26 +5,20 @@
                                  https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd"
              version="3.0">
 
-    <persistence-unit name="productPU" transaction-type="RESOURCE_LOCAL">
-        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+  <persistence-unit name="productPU" transaction-type="RESOURCE_LOCAL">
+    <properties>
+      <property name="jakarta.persistence.jdbc.driver" value="com.mysql.cj.jdbc.Driver"/>
+      <property name="jakarta.persistence.jdbc.url"
+                value="jdbc:mysql://localhost:3306/mis_language_center?useSSL=false&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=Asia/Ho_Chi_Minh"/>
+      <property name="jakarta.persistence.jdbc.user" value="root"/>
+      <property name="jakarta.persistence.jdbc.password" value="123456"/>
 
-        <properties>
-            <property name="jakarta.persistence.jdbc.driver" value="org.sqlite.JDBC"/>
-
-            <property name="jakarta.persistence.jdbc.url" value="jdbc:sqlite:lcms_db.db"/>
-
-            <property name="jakarta.persistence.jdbc.user" value=""/>
-            <property name="jakarta.persistence.jdbc.password" value=""/>
-
-            <property name="hibernate.dialect" value="org.hibernate.community.dialect.SQLiteDialect"/>
-
-            <property name="hibernate.hbm2ddl.auto" value="update"/>
-
-            <property name="hibernate.show_sql" value="true"/>
-            <property name="hibernate.format_sql" value="true"/>
-
-            <property name="hibernate.jdbc.batch_size" value="0"/>
-        </properties>
-    </persistence-unit>
+      <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/>
+      <property name="hibernate.show_sql" value="true"/>
+      <property name="hibernate.format_sql" value="true"/>
+      <!-- update: tạo bảng/cột thiếu theo entity, không xóa dữ liệu. Dùng create/drop khi cần tạo DB từ đầu. -->
+      <property name="hibernate.hbm2ddl.auto" value="update"/>
+    </properties>
+  </persistence-unit>
 
 </persistence>

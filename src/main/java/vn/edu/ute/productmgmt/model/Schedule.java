@@ -1,26 +1,29 @@
 package vn.edu.ute.productmgmt.model;
 
 import jakarta.persistence.*;
-import java.time.DayOfWeek;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.UUID;
 
 @Entity
-@Table(name = "schedule")
+@Table(
+        name = "schedules",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"class_id", "study_date", "start_time", "end_time"})
+)
 public class Schedule {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "schedule_id", updatable = false, nullable = false)
-    private UUID id;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "class_id", nullable = false)
     private TeachingClass teachingClass;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "day_of_week", nullable = false, length = 20)
-    private DayOfWeek dayOfWeek;
+    @Column(name = "study_date", nullable = false)
+    private LocalDate studyDate;
 
     @Column(name = "start_time", nullable = false)
     private LocalTime startTime;
@@ -28,10 +31,26 @@ public class Schedule {
     @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
 
-    // ===== GETTER & SETTER =====
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_id")
+    private Room room;
 
-    public UUID getId() {
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+
+    public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public TeachingClass getTeachingClass() {
@@ -42,12 +61,12 @@ public class Schedule {
         this.teachingClass = teachingClass;
     }
 
-    public DayOfWeek getDayOfWeek() {
-        return dayOfWeek;
+    public LocalDate getStudyDate() {
+        return studyDate;
     }
 
-    public void setDayOfWeek(DayOfWeek dayOfWeek) {
-        this.dayOfWeek = dayOfWeek;
+    public void setStudyDate(LocalDate studyDate) {
+        this.studyDate = studyDate;
     }
 
     public LocalTime getStartTime() {
@@ -64,5 +83,17 @@ public class Schedule {
 
     public void setEndTime(LocalTime endTime) {
         this.endTime = endTime;
+    }
+
+    public Room getRoom() {
+        return room;
+    }
+
+    public void setRoom(Room room) {
+        this.room = room;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 }

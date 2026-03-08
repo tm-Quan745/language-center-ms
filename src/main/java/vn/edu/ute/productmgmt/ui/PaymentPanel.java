@@ -3,7 +3,10 @@ package vn.edu.ute.productmgmt.ui;
 import vn.edu.ute.productmgmt.model.Payment;
 import vn.edu.ute.productmgmt.model.enums.PaymentMethod;
 import vn.edu.ute.productmgmt.model.enums.PaymentStatus;
+import vn.edu.ute.productmgmt.service.EnrollmentService;
+import vn.edu.ute.productmgmt.service.InvoiceService;
 import vn.edu.ute.productmgmt.service.PaymentService;
+import vn.edu.ute.productmgmt.service.StudentService;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
@@ -18,6 +21,9 @@ import java.util.List;
 public class PaymentPanel extends JPanel {
 
     private final PaymentService paymentService;
+    private final StudentService studentService;
+    private final EnrollmentService enrollmentService;
+    private final InvoiceService invoiceService;
 
     private final JTextField txtSearch = new JTextField(20);
     private final JLabel lblInfo = new JLabel(" ");
@@ -28,8 +34,14 @@ public class PaymentPanel extends JPanel {
 
     private static final DateTimeFormatter DATE_TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-    public PaymentPanel(PaymentService paymentService) {
+    public PaymentPanel(PaymentService paymentService,
+                        StudentService studentService,
+                        EnrollmentService enrollmentService,
+                        InvoiceService invoiceService) {
         this.paymentService = paymentService;
+        this.studentService = studentService;
+        this.enrollmentService = enrollmentService;
+        this.invoiceService = invoiceService;
         setLayout(new BorderLayout(8, 8));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
@@ -132,7 +144,10 @@ public class PaymentPanel extends JPanel {
     private void onAdd() {
         PaymentFormDialog dialog = new PaymentFormDialog(
                 SwingUtilities.getWindowAncestor(this),
-                null
+                null,
+                studentService.findAll(),
+                enrollmentService.findAll(),
+                invoiceService.findAll()
         );
         dialog.setVisible(true);
         if (!dialog.isSaved()) return;
@@ -140,22 +155,15 @@ public class PaymentPanel extends JPanel {
         PaymentFormDialog.PaymentFormData data = dialog.getResult();
         try {
             Long studentId = Long.parseLong(data.getStudentId().trim());
+            Long enrollmentId = parseLongOrNull(data.getEnrollmentId());
+            Long invoiceId = parseLongOrNull(data.getInvoiceId());
             BigDecimal amount = new BigDecimal(data.getAmount().trim());
-            LocalDateTime paymentDate = null;
-            String dateStr = data.getPaymentDate() != null ? data.getPaymentDate().trim() : "";
-            if (!dateStr.isEmpty()) {
-                try {
-                    paymentDate = LocalDateTime.parse(dateStr, DATE_TIME_FMT);
-                } catch (DateTimeParseException ex) {
-                    JOptionPane.showMessageDialog(this,
-                            "Định dạng ngày thanh toán không hợp lệ. Đúng: yyyy-MM-dd HH:mm",
-                            "Lỗi", JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
-            }
+            LocalDateTime paymentDate = parsePaymentDate(data.getPaymentDate());
 
             paymentService.createPayment(
                     studentId,
+                    enrollmentId,
+                    invoiceId,
                     amount,
                     paymentDate,
                     data.getMethod(),
@@ -179,7 +187,10 @@ public class PaymentPanel extends JPanel {
         PaymentFormDialog.PaymentFormData existing = paymentToFormData(selectedPayment);
         PaymentFormDialog dialog = new PaymentFormDialog(
                 SwingUtilities.getWindowAncestor(this),
-                existing
+                existing,
+                studentService.findAll(),
+                enrollmentService.findAll(),
+                invoiceService.findAll()
         );
         dialog.setVisible(true);
         if (!dialog.isSaved()) return;
@@ -187,23 +198,16 @@ public class PaymentPanel extends JPanel {
         PaymentFormDialog.PaymentFormData data = dialog.getResult();
         try {
             Long studentId = Long.parseLong(data.getStudentId().trim());
+            Long enrollmentId = parseLongOrNull(data.getEnrollmentId());
+            Long invoiceId = parseLongOrNull(data.getInvoiceId());
             BigDecimal amount = new BigDecimal(data.getAmount().trim());
-            LocalDateTime paymentDate = null;
-            String dateStr = data.getPaymentDate() != null ? data.getPaymentDate().trim() : "";
-            if (!dateStr.isEmpty()) {
-                try {
-                    paymentDate = LocalDateTime.parse(dateStr, DATE_TIME_FMT);
-                } catch (DateTimeParseException ex) {
-                    JOptionPane.showMessageDialog(this,
-                            "Định dạng ngày thanh toán không hợp lệ. Đúng: yyyy-MM-dd HH:mm",
-                            "Lỗi", JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
-            }
+            LocalDateTime paymentDate = parsePaymentDate(data.getPaymentDate());
 
             paymentService.updatePayment(
                     selectedPayment.getId(),
                     studentId,
+                    enrollmentId,
+                    invoiceId,
                     amount,
                     paymentDate,
                     data.getMethod(),
@@ -215,6 +219,24 @@ public class PaymentPanel extends JPanel {
             loadTableAll();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private Long parseLongOrNull(String value) {
+        if (value == null || value.trim().isEmpty()) return null;
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private LocalDateTime parsePaymentDate(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) return null;
+        try {
+            return LocalDateTime.parse(dateStr.trim(), DATE_TIME_FMT);
+        } catch (DateTimeParseException ex) {
+            return null;
         }
     }
 
@@ -243,6 +265,10 @@ public class PaymentPanel extends JPanel {
         PaymentFormDialog.PaymentFormData data = new PaymentFormDialog.PaymentFormData();
         data.setStudentId(p.getStudent() != null && p.getStudent().getId() != null
                 ? p.getStudent().getId().toString() : "");
+        data.setEnrollmentId(p.getEnrollment() != null && p.getEnrollment().getId() != null
+                ? p.getEnrollment().getId().toString() : "");
+        data.setInvoiceId(p.getInvoice() != null && p.getInvoice().getId() != null
+                ? p.getInvoice().getId().toString() : "");
         data.setAmount(p.getAmount() != null ? p.getAmount().toPlainString() : "");
         data.setPaymentDate(p.getPaymentDate() != null ? p.getPaymentDate().format(DATE_TIME_FMT) : "");
         data.setMethod(p.getPaymentMethod() != null ? p.getPaymentMethod() : PaymentMethod.Cash);
@@ -261,6 +287,8 @@ public class PaymentPanel extends JPanel {
         private final String[] columns = {
                 "ID",
                 "Học viên",
+                "Ghi danh",
+                "Hóa đơn",
                 "Số tiền",
                 "Ngày thanh toán",
                 "Phương thức",
@@ -304,11 +332,13 @@ public class PaymentPanel extends JPanel {
             return switch (columnIndex) {
                 case 0 -> p.getId();
                 case 1 -> p.getStudent() != null ? p.getStudent().getFullName() : "";
-                case 2 -> p.getAmount() != null ? p.getAmount().toPlainString() : "";
-                case 3 -> p.getPaymentDate() != null ? p.getPaymentDate().format(DATE_TIME_FMT) : "";
-                case 4 -> p.getPaymentMethod() != null ? p.getPaymentMethod().name() : "";
-                case 5 -> p.getStatus() != null ? p.getStatus().name() : "";
-                case 6 -> p.getReferenceCode();
+                case 2 -> p.getEnrollment() != null ? "GĐ #" + p.getEnrollment().getId() : "";
+                case 3 -> p.getInvoice() != null ? "HD #" + p.getInvoice().getId() : "";
+                case 4 -> p.getAmount() != null ? p.getAmount().toPlainString() : "";
+                case 5 -> p.getPaymentDate() != null ? p.getPaymentDate().format(DATE_TIME_FMT) : "";
+                case 6 -> p.getPaymentMethod() != null ? p.getPaymentMethod().name() : "";
+                case 7 -> p.getStatus() != null ? p.getStatus().name() : "";
+                case 8 -> p.getReferenceCode();
                 default -> "";
             };
         }

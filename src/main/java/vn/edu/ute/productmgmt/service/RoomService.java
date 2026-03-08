@@ -8,7 +8,6 @@ import vn.edu.ute.productmgmt.repo.RoomRepository;
 import jakarta.persistence.EntityManager;
 
 import java.util.List;
-import java.util.UUID;
 
 public class RoomService {
 
@@ -47,7 +46,7 @@ public class RoomService {
     // ========================
     // DELETE
     // ========================
-    public void delete(UUID id) throws Exception {
+    public void delete(Long id) throws Exception {
         tx.runInTransaction(em -> {
             roomRepo.delete(em, id);
             return null;

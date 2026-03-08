@@ -5,7 +5,6 @@ import vn.edu.ute.productmgmt.model.Schedule;
 import vn.edu.ute.productmgmt.repo.ScheduleRepository;
 
 import java.util.List;
-import java.util.UUID;
 
 public class JpaScheduleRepository implements ScheduleRepository {
 
@@ -15,11 +14,11 @@ public class JpaScheduleRepository implements ScheduleRepository {
     }
 
     @Override
-    public List<Schedule> findByClass(EntityManager em, UUID classId) {
+    public List<Schedule> findByClass(EntityManager em, Long classId) {
         return em.createQuery(
                         "SELECT s FROM Schedule s " +
                                 "WHERE s.teachingClass.id = :classId " +
-                                "ORDER BY s.dayOfWeek, s.startTime",
+                                "ORDER BY s.studyDate, s.startTime",
                         Schedule.class)
                 .setParameter("classId", classId)
                 .getResultList();
@@ -30,14 +29,15 @@ public class JpaScheduleRepository implements ScheduleRepository {
         return em.createQuery(
                         "SELECT s FROM Schedule s " +
                                 "JOIN FETCH s.teachingClass " +
-                                "ORDER BY s.dayOfWeek, s.startTime",
+                                "LEFT JOIN FETCH s.room " +
+                                "ORDER BY s.studyDate, s.startTime",
                         Schedule.class)
                 .getResultList();
     }
 
     @Override
-    public Schedule findById(EntityManager em, UUID id) {
-        return null;
+    public Schedule findById(EntityManager em, Long id) {
+        return em.find(Schedule.class, id);
     }
 
     @Override
@@ -46,7 +46,7 @@ public class JpaScheduleRepository implements ScheduleRepository {
     }
 
     @Override
-    public void delete(EntityManager em, UUID id) {
+    public void delete(EntityManager em, Long id) {
         Schedule s = em.find(Schedule.class, id);
         if (s != null) {
             em.remove(s);

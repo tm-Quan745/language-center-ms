@@ -2,13 +2,19 @@ package vn.edu.ute.productmgmt.ui;
 
 import vn.edu.ute.productmgmt.model.UserAccount;
 import vn.edu.ute.productmgmt.service.AuthService;
+import vn.edu.ute.productmgmt.service.BranchService;
+import vn.edu.ute.productmgmt.service.CertificateService;
 import vn.edu.ute.productmgmt.service.CourseService;
 import vn.edu.ute.productmgmt.service.RoomService;
 import vn.edu.ute.productmgmt.service.StudentService;
 import vn.edu.ute.productmgmt.service.TeacherService;
 import vn.edu.ute.productmgmt.service.StaffService;
 import vn.edu.ute.productmgmt.service.EnrollmentService;
+import vn.edu.ute.productmgmt.service.InvoiceService;
 import vn.edu.ute.productmgmt.service.PaymentService;
+import vn.edu.ute.productmgmt.service.PlacementTestService;
+import vn.edu.ute.productmgmt.service.PromotionService;
+import vn.edu.ute.productmgmt.service.NotificationService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -25,28 +31,46 @@ public class LcmsLoginFrame extends JFrame {
     private final AuthService authService;
     private final CourseService courseService;
     private final RoomService roomService;
+    private final BranchService branchService;
+    private final CertificateService certificateService;
     private final StudentService studentService;
     private final TeacherService teacherService;
     private final StaffService staffService;
     private final EnrollmentService enrollmentService;
     private final PaymentService paymentService;
+    private final PromotionService promotionService;
+    private final InvoiceService invoiceService;
+    private final PlacementTestService placementTestService;
+    private final NotificationService notificationService;
 
     public LcmsLoginFrame(AuthService authService,
                           CourseService courseService,
                           RoomService roomService,
+                          BranchService branchService,
+                          CertificateService certificateService,
                           StudentService studentService,
                           TeacherService teacherService,
                           StaffService staffService,
                           EnrollmentService enrollmentService,
-                          PaymentService paymentService) {
+                          PaymentService paymentService,
+                          PromotionService promotionService,
+                          InvoiceService invoiceService,
+                          PlacementTestService placementTestService,
+                          NotificationService notificationService) {
         this.authService = authService;
         this.courseService = courseService;
         this.roomService = roomService;
+        this.branchService = branchService;
+        this.certificateService = certificateService;
         this.studentService = studentService;
         this.teacherService = teacherService;
         this.staffService = staffService;
         this.enrollmentService = enrollmentService;
         this.paymentService = paymentService;
+        this.promotionService = promotionService;
+        this.invoiceService = invoiceService;
+        this.placementTestService = placementTestService;
+        this.notificationService = notificationService;
 
         setTitle("LCMS - Login");
         setSize(400, 300);
@@ -156,11 +180,17 @@ public class LcmsLoginFrame extends JFrame {
                         user,
                         courseService,
                         roomService,
+                        branchService,
+                        certificateService,
                         studentService,
                         teacherService,
                         staffService,
                         enrollmentService,
-                        paymentService
+                        paymentService,
+                        promotionService,
+                        invoiceService,
+                        placementTestService,
+                        notificationService
                 );
                 mainFrame.setVisible(true);
 

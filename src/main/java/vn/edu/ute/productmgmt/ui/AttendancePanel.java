@@ -14,7 +14,6 @@ import java.awt.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 public class AttendancePanel extends JPanel {
 
@@ -103,7 +102,7 @@ public class AttendancePanel extends JPanel {
 
         if (cls == null) return;
 
-        UUID classId = cls.getId();
+        Long classId = cls.getId();
 
         students = attendanceService.getStudentsByClass(classId);
 

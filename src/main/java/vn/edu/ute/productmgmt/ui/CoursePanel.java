@@ -12,7 +12,6 @@ import java.awt.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Panel Khóa học: form (Tên KH, Mức phí, Thời lượng) + JTable danh sách, ghép CourseService.
@@ -192,7 +191,7 @@ public class CoursePanel extends JPanel {
         }
     }
 
-    private Course formDataToCourse(CourseFormDialog.CourseFormData data, UUID keepId) {
+    private Course formDataToCourse(CourseFormDialog.CourseFormData data, Long keepId) {
         String name = data.getName() != null ? data.getName().trim() : "";
         String feeStr = data.getFee() != null ? data.getFee().trim() : "";
         String durationStr = data.getDuration() != null ? data.getDuration().trim() : "";
@@ -219,6 +218,7 @@ public class CoursePanel extends JPanel {
             }
         }
         Course c = new Course();
+        if (keepId != null) c.setId(keepId);
         c.setCourseName(name);
         c.setDescription(data.getDescription());
         c.setLevel(data.getLevel());
@@ -229,7 +229,7 @@ public class CoursePanel extends JPanel {
         return c;
     }
 
-    private Course formToCourse(UUID keepId) {
+    private Course formToCourse(Long keepId) {
         String name = txtCourseName.getText().trim();
         String feeStr = txtFee.getText().trim();
         String durationStr = txtDuration.getText().trim();
@@ -257,6 +257,7 @@ public class CoursePanel extends JPanel {
             } catch (NumberFormatException ignored) { }
         }
         Course c = new Course();
+        if (keepId != null) c.setId(keepId);
         c.setCourseName(name);
         c.setDescription(description.isEmpty() ? null : description);
         c.setLevel(level);

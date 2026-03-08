@@ -1,10 +1,14 @@
 package vn.edu.ute.productmgmt.service;
 
+import vn.edu.ute.productmgmt.db.Jpa;
 import vn.edu.ute.productmgmt.db.TransactionManager;
 import vn.edu.ute.productmgmt.model.Result;
+import vn.edu.ute.productmgmt.model.TeachingClass;
 import vn.edu.ute.productmgmt.repo.ResultRepository;
 
+import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
+import java.util.List;
 
 public class ResultService {
 
@@ -18,10 +22,20 @@ public class ResultService {
         this.txManager = txManager;
     }
 
-    public void saveResult(Result r) {
+    public List<Result> findResultsByClass(TeachingClass teachingClass) {
+        EntityManager em = Jpa.em();
+        try {
+            return resultRepo.findByClass(em, teachingClass);
+        } finally {
+            em.close();
+        }
+    }
 
-        String grade = calculateGrade(r.getScore());
-        r.setGrade(grade);
+    public void saveResult(Result r) {
+        // Chỉ tự tính xếp loại nếu user chưa nhập
+        if (r.getGrade() == null || r.getGrade().isBlank()) {
+            r.setGrade(calculateGrade(r.getScore()));
+        }
 
         try {
             txManager.runInTransaction(em -> {

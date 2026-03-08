@@ -3,6 +3,8 @@ package vn.edu.ute.productmgmt.service;
 import jakarta.persistence.EntityManager;
 import vn.edu.ute.productmgmt.db.Jpa;
 import vn.edu.ute.productmgmt.db.TransactionManager;
+import vn.edu.ute.productmgmt.model.Enrollment;
+import vn.edu.ute.productmgmt.model.Invoice;
 import vn.edu.ute.productmgmt.model.Payment;
 import vn.edu.ute.productmgmt.model.Student;
 import vn.edu.ute.productmgmt.model.enums.PaymentMethod;
@@ -60,9 +62,11 @@ public class PaymentService {
     }
 
     /**
-     * Tạo Payment từ các primitive/id – tiện cho UI.
+     * Tạo Payment từ các primitive/id – tiện cho UI. enrollmentId và invoiceId có thể null.
      */
     public Payment createPayment(Long studentId,
+                                 Long enrollmentId,
+                                 Long invoiceId,
                                  BigDecimal amount,
                                  LocalDateTime paymentDate,
                                  PaymentMethod method,
@@ -73,9 +77,13 @@ public class PaymentService {
                 throw new IllegalArgumentException("Payment phải gắn với Student");
             }
             Student studentRef = em.getReference(Student.class, studentId);
+            Enrollment enrollmentRef = enrollmentId != null ? em.getReference(Enrollment.class, enrollmentId) : null;
+            Invoice invoiceRef = invoiceId != null ? em.getReference(Invoice.class, invoiceId) : null;
 
             Payment p = new Payment();
             p.setStudent(studentRef);
+            p.setEnrollment(enrollmentRef);
+            p.setInvoice(invoiceRef);
             p.setAmount(amount);
             p.setPaymentDate(paymentDate != null ? paymentDate : LocalDateTime.now());
             p.setPaymentMethod(method != null ? method : PaymentMethod.Cash);
@@ -89,10 +97,12 @@ public class PaymentService {
     }
 
     /**
-     * Cập nhật Payment cơ bản (không bắt buộc đổi student).
+     * Cập nhật Payment (enrollmentId/invoiceId null = bỏ liên kết).
      */
     public Payment updatePayment(Long id,
                                  Long studentId,
+                                 Long enrollmentId,
+                                 Long invoiceId,
                                  BigDecimal amount,
                                  LocalDateTime paymentDate,
                                  PaymentMethod method,
@@ -104,9 +114,10 @@ public class PaymentService {
                 throw new IllegalArgumentException("Không tìm thấy payment id=" + id);
             }
             if (studentId != null) {
-                Student studentRef = em.getReference(Student.class, studentId);
-                existing.setStudent(studentRef);
+                existing.setStudent(em.getReference(Student.class, studentId));
             }
+            existing.setEnrollment(enrollmentId != null ? em.getReference(Enrollment.class, enrollmentId) : null);
+            existing.setInvoice(invoiceId != null ? em.getReference(Invoice.class, invoiceId) : null);
             if (amount != null) existing.setAmount(amount);
             if (paymentDate != null) existing.setPaymentDate(paymentDate);
             if (method != null) existing.setPaymentMethod(method);

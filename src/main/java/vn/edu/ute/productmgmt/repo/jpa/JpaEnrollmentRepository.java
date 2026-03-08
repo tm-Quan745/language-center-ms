@@ -6,7 +6,6 @@ import vn.edu.ute.productmgmt.model.Student;
 import vn.edu.ute.productmgmt.repo.EnrollmentRepository;
 
 import java.util.List;
-import java.util.UUID;
 
 public class JpaEnrollmentRepository implements EnrollmentRepository {
 
@@ -45,7 +44,7 @@ public class JpaEnrollmentRepository implements EnrollmentRepository {
     }
 
     @Override
-    public List<Student> findStudentsByClassId(EntityManager em, UUID classId) {
+    public List<Student> findStudentsByClassId(EntityManager em, Long classId) {
         return em.createQuery(
                         "SELECT e.student FROM Enrollment e " +
                                 "WHERE e.teachingClass.id = :classId " +
