@@ -1,5 +1,6 @@
 package vn.edu.ute.productmgmt.ui;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import vn.edu.ute.productmgmt.model.Enrollment;
 import vn.edu.ute.productmgmt.model.Invoice;
 import vn.edu.ute.productmgmt.model.Student;
@@ -7,9 +8,11 @@ import vn.edu.ute.productmgmt.model.enums.PaymentMethod;
 import vn.edu.ute.productmgmt.model.enums.PaymentStatus;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -21,77 +24,44 @@ public class PaymentFormDialog extends JDialog {
     private final JComboBox<Student> cboStudent;
     private final JComboBox<Enrollment> cboEnrollment;
     private final JComboBox<Invoice> cboInvoice;
-    private final JTextField txtAmount = new JTextField(10);
+    private final JTextField txtAmount = new JTextField();
     private final JSpinner spnPaymentDate;
     private final JComboBox<PaymentMethod> cboMethod = new JComboBox<>(PaymentMethod.values());
     private final JComboBox<PaymentStatus> cboStatus = new JComboBox<>(PaymentStatus.values());
-    private final JTextField txtReferenceCode = new JTextField(20);
+    private final JTextField txtReferenceCode = new JTextField();
 
     private boolean saved = false;
     private PaymentFormData result;
 
-    public PaymentFormDialog(Window owner,
-                             PaymentFormData existing,
-                             List<Student> students,
-                             List<Enrollment> enrollments,
-                             List<Invoice> invoices) {
-        super(owner, "Thanh toán", ModalityType.APPLICATION_MODAL);
+    public PaymentFormDialog(Window owner, PaymentFormData existing,
+                             List<Student> students, List<Enrollment> enrollments, List<Invoice> invoices) {
+        super(owner, "Giao dịch Thanh toán", ModalityType.APPLICATION_MODAL);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        setSize(600, 750);
+        setLayout(new BorderLayout());
 
+        // --- Renderers & Data Prep ---
         cboStudent = new JComboBox<>(students != null ? students.toArray(new Student[0]) : new Student[0]);
-        cboStudent.setRenderer(new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof Student s) {
-                    setText(s.getFullName() != null ? s.getFullName() : "ID " + s.getId());
-                }
-                return this;
-            }
-        });
+        setupStudentRenderer();
 
         List<Enrollment> encList = new ArrayList<>();
         encList.add(null);
         if (enrollments != null) encList.addAll(enrollments);
         cboEnrollment = new JComboBox<>(encList.toArray(new Enrollment[0]));
-        cboEnrollment.setRenderer(new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof Enrollment e) {
-                    String student = e.getStudent() != null ? e.getStudent().getFullName() : "";
-                    String cls = e.getTeachingClass() != null ? e.getTeachingClass().getClassName() : "";
-                    setText("ID " + e.getId() + " - " + student + " - " + cls);
-                } else {
-                    setText("— Không —");
-                }
-                return this;
-            }
-        });
+        setupEnrollmentRenderer();
 
         List<Invoice> invList = new ArrayList<>();
         invList.add(null);
         if (invoices != null) invList.addAll(invoices);
         cboInvoice = new JComboBox<>(invList.toArray(new Invoice[0]));
-        cboInvoice.setRenderer(new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof Invoice i) {
-                    String student = i.getStudent() != null ? i.getStudent().getFullName() : "";
-                    String amt = i.getTotalAmount() != null ? i.getTotalAmount().toPlainString() : "";
-                    setText("HD #" + i.getId() + " - " + student + " - " + amt);
-                } else {
-                    setText("— Không —");
-                }
-                return this;
-            }
-        });
+        setupInvoiceRenderer();
 
         spnPaymentDate = createDateTimeSpinner();
 
+        // --- Build UI ---
         buildUI();
 
+        // --- Data Loading ---
         if (existing != null) {
             setSelectedStudentById(existing.getStudentId());
             setSelectedEnrollmentById(existing.getEnrollmentId());
@@ -101,182 +71,122 @@ public class PaymentFormDialog extends JDialog {
             if (existing.getMethod() != null) cboMethod.setSelectedItem(existing.getMethod());
             if (existing.getStatus() != null) cboStatus.setSelectedItem(existing.getStatus());
             txtReferenceCode.setText(existing.getReferenceCode());
-            result = existing;
+            this.result = existing;
         } else {
-            result = new PaymentFormData();
+            this.result = new PaymentFormData();
             cboMethod.setSelectedItem(PaymentMethod.Cash);
             cboStatus.setSelectedItem(PaymentStatus.Completed);
             spnPaymentDate.setValue(new Date());
         }
 
-        pack();
         setLocationRelativeTo(owner);
+    }
+
+    private void buildUI() {
+        JPanel root = new JPanel(new BorderLayout());
+        root.setBackground(Color.WHITE);
+        root.setBorder(new EmptyBorder(30, 40, 30, 40));
+
+        // Header
+        JLabel lblHeader = new JLabel("Thông tin giao dịch");
+        lblHeader.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblHeader.setBorder(new EmptyBorder(0, 0, 25, 0));
+        root.add(lblHeader, BorderLayout.NORTH);
+
+        // Body
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(8, 0, 8, 0);
+
+        addFormRow(form, gbc, 0, "Học viên:", cboStudent);
+        addFormRow(form, gbc, 1, "Phiếu ghi danh:", cboEnrollment);
+        addFormRow(form, gbc, 2, "Hóa đơn liên quan:", cboInvoice);
+
+        // Amount Field
+        gbc.gridy = 3; gbc.gridx = 0; gbc.weightx = 0;
+        form.add(createLabel("Số tiền thanh toán:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0; gbc.insets = new Insets(8, 20, 8, 0);
+        txtAmount.setPreferredSize(new Dimension(0, 40));
+        txtAmount.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
+        txtAmount.putClientProperty(FlatClientProperties.TEXT_FIELD_LEADING_ICON, new JLabel(" 💰 "));
+        txtAmount.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Nhập số tiền...");
+        form.add(txtAmount, gbc);
+
+        gbc.insets = new Insets(8, 0, 8, 0);
+        addFormRow(form, gbc, 4, "Ngày giờ giao dịch:", spnPaymentDate);
+        addFormRow(form, gbc, 5, "Phương thức:", cboMethod);
+        addFormRow(form, gbc, 6, "Trạng thái:", cboStatus);
+
+        // Reference Code
+        gbc.gridy = 7; gbc.gridx = 0; gbc.weightx = 0;
+        form.add(createLabel("Mã tham chiếu:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0; gbc.insets = new Insets(8, 20, 8, 0);
+        txtReferenceCode.setPreferredSize(new Dimension(0, 40));
+        txtReferenceCode.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
+        txtReferenceCode.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Mã chuyển khoản, số biên lai...");
+        form.add(txtReferenceCode, gbc);
+
+        root.add(form, BorderLayout.CENTER);
+
+        // Footer
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
+        footer.setOpaque(false);
+        footer.setBorder(new EmptyBorder(25, 0, 0, 0));
+
+        JButton btnCancel = new JButton("Hủy bỏ");
+        btnCancel.setPreferredSize(new Dimension(100, 42));
+        btnCancel.putClientProperty(FlatClientProperties.STYLE, "arc: 12; background: #f2f2f2; borderWidth: 0");
+        btnCancel.addActionListener(e -> dispose());
+
+        JButton btnSave = new JButton("Xác nhận");
+        btnSave.setPreferredSize(new Dimension(140, 42));
+        btnSave.putClientProperty(FlatClientProperties.STYLE, "arc: 12; background: #0d6efd; foreground: #ffffff; borderWidth: 0");
+        btnSave.addActionListener(e -> onSave());
+
+        footer.add(btnCancel);
+        footer.add(btnSave);
+        root.add(footer, BorderLayout.SOUTH);
+
+        add(root);
+    }
+
+    private void addFormRow(JPanel p, GridBagConstraints gbc, int row, String label, JComponent comp) {
+        gbc.gridy = row; gbc.gridx = 0; gbc.weightx = 0;
+        gbc.insets = new Insets(8, 0, 8, 0);
+        p.add(createLabel(label), gbc);
+
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.insets = new Insets(8, 20, 8, 0);
+        comp.setPreferredSize(new Dimension(0, 40));
+        comp.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
+        p.add(comp, gbc);
+    }
+
+    private JLabel createLabel(String text) {
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 14));
+        lbl.setForeground(new Color(80, 80, 80));
+        return lbl;
     }
 
     private JSpinner createDateTimeSpinner() {
         SpinnerDateModel model = new SpinnerDateModel(new Date(), null, null, java.util.Calendar.MINUTE);
         JSpinner spinner = new JSpinner(model);
-        JSpinner.DateEditor editor = new JSpinner.DateEditor(spinner, DATE_TIME_FORMAT);
-        spinner.setEditor(editor);
-        spinner.setPreferredSize(new Dimension(160, spinner.getPreferredSize().height));
+        spinner.setEditor(new JSpinner.DateEditor(spinner, DATE_TIME_FORMAT));
         return spinner;
     }
 
-    private void setSpinnerFromDateTimeString(String value) {
-        if (value == null || value.trim().isEmpty()) return;
-        try {
-            LocalDateTime ldt = LocalDateTime.parse(value.trim(), java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
-            Date date = Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
-            spnPaymentDate.setValue(date);
-        } catch (Exception ignored) { }
-    }
-
-    private String getSpinnerDateTimeString() {
-        try {
-            spnPaymentDate.commitEdit();
-        } catch (Exception ignored) { }
-        try {
-            Object v = spnPaymentDate.getValue();
-            if (v instanceof Date d) {
-                LocalDateTime ldt = d.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-                return ldt.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
-            }
-            if (v instanceof java.util.Calendar c) {
-                LocalDateTime ldt = c.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-                return ldt.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
-            }
-        } catch (Exception ignored) { }
-        return "";
-    }
-
-    private void setSelectedStudentById(String idStr) {
-        if (idStr == null || idStr.trim().isEmpty()) return;
-        try {
-            Long id = Long.parseLong(idStr.trim());
-            for (int i = 0; i < cboStudent.getItemCount(); i++) {
-                Student s = cboStudent.getItemAt(i);
-                if (s != null && id.equals(s.getId())) {
-                    cboStudent.setSelectedIndex(i);
-                    return;
-                }
-            }
-        } catch (Exception ignored) { }
-    }
-
-    private void setSelectedEnrollmentById(String idStr) {
-        if (idStr == null || idStr.trim().isEmpty()) {
-            cboEnrollment.setSelectedIndex(0);
-            return;
-        }
-        try {
-            Long id = Long.parseLong(idStr.trim());
-            for (int i = 0; i < cboEnrollment.getItemCount(); i++) {
-                Enrollment e = cboEnrollment.getItemAt(i);
-                if (e != null && id.equals(e.getId())) {
-                    cboEnrollment.setSelectedIndex(i);
-                    return;
-                }
-            }
-        } catch (Exception ignored) { }
-    }
-
-    private void setSelectedInvoiceById(String idStr) {
-        if (idStr == null || idStr.trim().isEmpty()) {
-            cboInvoice.setSelectedIndex(0);
-            return;
-        }
-        try {
-            Long id = Long.parseLong(idStr.trim());
-            for (int i = 0; i < cboInvoice.getItemCount(); i++) {
-                Invoice inv = cboInvoice.getItemAt(i);
-                if (inv != null && id.equals(inv.getId())) {
-                    cboInvoice.setSelectedIndex(i);
-                    return;
-                }
-            }
-        } catch (Exception ignored) { }
-    }
-
-    private void buildUI() {
-        JPanel form = new JPanel(new GridBagLayout());
-        GridBagConstraints g = new GridBagConstraints();
-        g.insets = new Insets(6, 6, 6, 6);
-        g.anchor = GridBagConstraints.WEST;
-        g.fill = GridBagConstraints.HORIZONTAL;
-
-        int r = 0;
-
-        g.gridx = 0; g.gridy = r;
-        form.add(new JLabel("Học viên:"), g);
-        g.gridx = 1;
-        form.add(cboStudent, g);
-
-        r++;
-        g.gridx = 0; g.gridy = r;
-        form.add(new JLabel("Ghi danh (Enrollment):"), g);
-        g.gridx = 1;
-        form.add(cboEnrollment, g);
-
-        r++;
-        g.gridx = 0; g.gridy = r;
-        form.add(new JLabel("Hóa đơn (Invoice):"), g);
-        g.gridx = 1;
-        form.add(cboInvoice, g);
-
-        r++;
-        g.gridx = 0; g.gridy = r;
-        form.add(new JLabel("Số tiền:"), g);
-        g.gridx = 1;
-        form.add(txtAmount, g);
-
-        r++;
-        g.gridx = 0; g.gridy = r;
-        form.add(new JLabel("Ngày giờ thanh toán:"), g);
-        g.gridx = 1;
-        form.add(spnPaymentDate, g);
-
-        r++;
-        g.gridx = 0; g.gridy = r;
-        form.add(new JLabel("Phương thức:"), g);
-        g.gridx = 1;
-        form.add(cboMethod, g);
-
-        r++;
-        g.gridx = 0; g.gridy = r;
-        form.add(new JLabel("Trạng thái:"), g);
-        g.gridx = 1;
-        form.add(cboStatus, g);
-
-        r++;
-        g.gridx = 0; g.gridy = r;
-        form.add(new JLabel("Mã tham chiếu:"), g);
-        g.gridx = 1;
-        form.add(txtReferenceCode, g);
-
-        JButton btnSave = new JButton("Lưu");
-        JButton btnCancel = new JButton("Hủy");
-        btnSave.addActionListener(e -> onSave());
-        btnCancel.addActionListener(e -> dispose());
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        actions.add(btnSave);
-        actions.add(btnCancel);
-
-        getContentPane().setLayout(new BorderLayout(10, 10));
-        getContentPane().add(form, BorderLayout.CENTER);
-        getContentPane().add(actions, BorderLayout.SOUTH);
-    }
+    // --- Giữ nguyên logic cũ ---
 
     private void onSave() {
         try {
             Student selStudent = (Student) cboStudent.getSelectedItem();
-            if (selStudent == null) {
-                throw new IllegalArgumentException("Chọn học viên.");
-            }
+            if (selStudent == null) throw new IllegalArgumentException("Chọn học viên.");
 
             String amountStr = txtAmount.getText().trim();
-            if (amountStr.isEmpty()) {
-                throw new IllegalArgumentException("Số tiền không được để trống.");
-            }
+            if (amountStr.isEmpty()) throw new IllegalArgumentException("Số tiền không được để trống.");
             new java.math.BigDecimal(amountStr);
 
             result.setStudentId(selStudent.getId().toString());
@@ -293,9 +203,86 @@ public class PaymentFormDialog extends JDialog {
             saved = true;
             dispose();
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Số tiền phải là số.", "Lỗi nhập liệu", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Số tiền phải là số hợp lệ.", "Lỗi", JOptionPane.ERROR_MESSAGE);
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi nhập liệu", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void setupStudentRenderer() {
+        cboStudent.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof Student s) setText(s.getFullName());
+                return this;
+            }
+        });
+    }
+
+    private void setupEnrollmentRenderer() {
+        cboEnrollment.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof Enrollment e) {
+                    setText("Phiếu #" + e.getId() + " - " + e.getTeachingClass().getClassName());
+                } else setText("— Không liên kết —");
+                return this;
+            }
+        });
+    }
+
+    private void setupInvoiceRenderer() {
+        cboInvoice.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof Invoice i) {
+                    setText("Hóa đơn #" + i.getId() + " - " + String.format("%,.0f", i.getTotalAmount()) + " VNĐ");
+                } else setText("— Không liên kết —");
+                return this;
+            }
+        });
+    }
+
+    private void setSpinnerFromDateTimeString(String value) {
+        if (value == null || value.isBlank()) return;
+        try {
+            LocalDateTime ldt = LocalDateTime.parse(value.trim(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+            spnPaymentDate.setValue(Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant()));
+        } catch (Exception ignored) { }
+    }
+
+    private String getSpinnerDateTimeString() {
+        Date d = (Date) spnPaymentDate.getValue();
+        return d.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+    }
+
+    private void setSelectedStudentById(String id) {
+        for (int i = 0; i < cboStudent.getItemCount(); i++) {
+            if (cboStudent.getItemAt(i).getId().toString().equals(id)) {
+                cboStudent.setSelectedIndex(i); break;
+            }
+        }
+    }
+
+    private void setSelectedEnrollmentById(String id) {
+        for (int i = 0; i < cboEnrollment.getItemCount(); i++) {
+            Enrollment e = cboEnrollment.getItemAt(i);
+            if (e != null && e.getId().toString().equals(id)) {
+                cboEnrollment.setSelectedIndex(i); break;
+            }
+        }
+    }
+
+    private void setSelectedInvoiceById(String id) {
+        for (int i = 0; i < cboInvoice.getItemCount(); i++) {
+            Invoice inv = cboInvoice.getItemAt(i);
+            if (inv != null && inv.getId().toString().equals(id)) {
+                cboInvoice.setSelectedIndex(i); break;
+            }
         }
     }
 
@@ -303,14 +290,9 @@ public class PaymentFormDialog extends JDialog {
     public PaymentFormData getResult() { return result; }
 
     public static class PaymentFormData {
-        private String studentId;
-        private String enrollmentId;
-        private String invoiceId;
-        private String amount;
-        private String paymentDate;
+        private String studentId, enrollmentId, invoiceId, amount, paymentDate, referenceCode;
         private PaymentMethod method;
         private PaymentStatus status;
-        private String referenceCode;
 
         public String getStudentId() { return studentId; }
         public void setStudentId(String studentId) { this.studentId = studentId; }

@@ -1,5 +1,6 @@
 package vn.edu.ute.productmgmt.ui;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import vn.edu.ute.productmgmt.model.Result;
 import vn.edu.ute.productmgmt.model.Student;
 import vn.edu.ute.productmgmt.model.TeachingClass;
@@ -8,7 +9,8 @@ import vn.edu.ute.productmgmt.service.ClassService;
 import vn.edu.ute.productmgmt.service.ResultService;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -16,6 +18,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Panel quản lý kết quả học tập, chuẩn hóa theo ClassPanel
+ */
 public class ResultPanel extends JPanel {
 
     private final ResultService resultService;
@@ -23,14 +28,11 @@ public class ResultPanel extends JPanel {
     private final AttendanceService attendanceService;
 
     private JComboBox<TeachingClass> cboClass;
-    private JButton btnLoad;
-    private JButton btnSave;
-
-    private JTable table;
-    private DefaultTableModel model;
+    private final JLabel lblInfo = new JLabel(" ");
+    private final ResultTableModel tableModel = new ResultTableModel();
+    private final JTable table = new JTable(tableModel);
 
     private List<Student> students = new ArrayList<>();
-    /** Map studentId -> Result (khi load có kết quả sẵn) */
     private Map<Long, Result> existingResultsByStudent = Map.of();
 
     public ResultPanel(ResultService resultService,
@@ -40,135 +42,272 @@ public class ResultPanel extends JPanel {
         this.classService = classService;
         this.attendanceService = attendanceService;
 
-        initUI();
+        setLayout(new BorderLayout(20, 20));
+        setOpaque(false);
+        setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        buildUI();
         loadClasses();
     }
 
-    private void initUI() {
+    private void buildUI() {
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
 
-        setLayout(new BorderLayout());
+        JLabel title = new JLabel("Quản lý Kết quả học tập");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 22));
 
-        JPanel top = new JPanel();
+        header.add(title, BorderLayout.WEST);
+        header.add(buildActionBar(), BorderLayout.EAST);
+
+        add(header, BorderLayout.NORTH);
+
+        add(buildTableArea(), BorderLayout.CENTER);
+
+        JPanel statusBar = new JPanel(new BorderLayout());
+        statusBar.setOpaque(false);
+
+        lblInfo.setForeground(Color.GRAY);
+        lblInfo.setFont(new Font("Segoe UI", Font.ITALIC, 13));
+
+        statusBar.add(lblInfo, BorderLayout.WEST);
+
+        add(statusBar, BorderLayout.SOUTH);
+    }
+
+    private JComponent buildActionBar() {
+        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        bar.setOpaque(false);
 
         cboClass = new JComboBox<>();
-        btnLoad = new JButton("Tải danh sách");
+        cboClass.setPreferredSize(new Dimension(250, 36));
+        cboClass.putClientProperty(FlatClientProperties.STYLE, "arc:10");
 
-        top.add(new JLabel("Lớp:"));
-        top.add(cboClass);
-        top.add(btnLoad);
+        JButton btnLoad = createBtn("Tải danh sách", "#0d6efd", "📥 ");
+        JButton btnSave = createBtn("Lưu kết quả", "#198754", "💾 ");
+        JButton btnRefresh = new JButton("Tải lại");
 
-        add(top, BorderLayout.NORTH);
-
-        model = new DefaultTableModel(
-                new Object[]{"Tên học viên", "Điểm", "Xếp loại", "Nhận xét"}, 0) {
-
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return column >= 1;
-            }
-        };
-
-        table = new JTable(model);
-        table.setRowHeight(24);
-        table.getColumnModel().getColumn(2).setPreferredWidth(80);
-        table.getColumnModel().getColumn(3).setPreferredWidth(200);
-
-        add(new JScrollPane(table), BorderLayout.CENTER);
-
-        btnSave = new JButton("Lưu kết quả");
-
-        JPanel bottom = new JPanel();
-        bottom.add(btnSave);
-
-        add(bottom, BorderLayout.SOUTH);
+        btnRefresh.setPreferredSize(new Dimension(90, 36));
+        btnRefresh.putClientProperty(FlatClientProperties.STYLE, "arc:10");
 
         btnLoad.addActionListener(e -> loadStudents());
-
         btnSave.addActionListener(e -> saveResults());
+        btnRefresh.addActionListener(e -> {
+            cboClass.setSelectedIndex(-1);
+            tableModel.setData(new ArrayList<>());
+        });
+
+        bar.add(new JLabel("Lớp:"));
+        bar.add(cboClass);
+        bar.add(btnLoad);
+        bar.add(btnSave);
+        bar.add(btnRefresh);
+
+        return bar;
+    }
+
+    private JButton createBtn(String text, String color, String icon) {
+        JButton btn = new JButton(icon + text);
+
+        btn.setPreferredSize(new Dimension(150, 36));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        String fg = color.equals("#ffc107") ? "#000000" : "#ffffff";
+
+        btn.putClientProperty(FlatClientProperties.STYLE,
+                "background:" + color +
+                        ";foreground:" + fg +
+                        ";arc:10;borderWidth:0");
+
+        return btn;
+    }
+
+    private JComponent buildTableArea() {
+        JScrollPane scroll = new JScrollPane(table);
+
+        scroll.putClientProperty(FlatClientProperties.STYLE, "arc:15");
+        scroll.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230)));
+
+        table.setRowHeight(45);
+        table.setShowVerticalLines(false);
+
+        table.getTableHeader().setFont(new Font("Segoe UI Semibold", Font.PLAIN, 14));
+        table.getTableHeader().setPreferredSize(new Dimension(0, 45));
+
+        // Cho phép chỉnh sửa cột từ 1 trở đi
+        table.setDefaultEditor(Object.class, new DefaultCellEditor(new JTextField()));
+
+        return scroll;
     }
 
     private void loadClasses() {
-
-        List<TeachingClass> classes = classService.findAll();
-
-        for (TeachingClass c : classes) {
-            cboClass.addItem(c);
+        try {
+            List<TeachingClass> classes = classService.findAll();
+            for (TeachingClass c : classes) {
+                cboClass.addItem(c);
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Lỗi tải danh sách lớp: " + ex.getMessage());
         }
     }
 
     private void loadStudents() {
+        try {
+            tableModel.setData(new ArrayList<>());
+            students.clear();
 
-        model.setRowCount(0);
-        students.clear();
+            TeachingClass cls = (TeachingClass) cboClass.getSelectedItem();
+            if (cls == null) {
+                lblInfo.setText("Vui lòng chọn lớp học");
+                return;
+            }
 
-        TeachingClass cls = (TeachingClass) cboClass.getSelectedItem();
-        if (cls == null) return;
+            students = attendanceService.getStudentsByClass(cls.getId());
 
-        students = attendanceService.getStudentsByClass(cls.getId());
+            List<Result> existingResults = resultService.findResultsByClass(cls);
+            existingResultsByStudent = existingResults.stream()
+                    .filter(r -> r.getStudent() != null && r.getStudent().getId() != null)
+                    .collect(Collectors.toMap(r -> r.getStudent().getId(), r -> r, (a, b) -> a));
 
-        List<Result> existingResults = resultService.findResultsByClass(cls);
-        existingResultsByStudent = existingResults.stream()
-                .filter(r -> r.getStudent() != null && r.getStudent().getId() != null)
-                .collect(Collectors.toMap(r -> r.getStudent().getId(), r -> r, (a, b) -> a));
+            List<ResultData> dataList = new ArrayList<>();
+            for (Student s : students) {
+                Result r = existingResultsByStudent.get(s.getId());
+                ResultData data = new ResultData();
+                data.studentName = s.getFullName();
+                data.studentId = s.getId();
+                data.score = r != null && r.getScore() != null ? r.getScore().toPlainString() : "";
+                data.grade = r != null && r.getGrade() != null ? r.getGrade() : "";
+                data.comment = r != null && r.getComment() != null ? r.getComment() : "";
+                dataList.add(data);
+            }
 
-        for (Student s : students) {
-            Result r = existingResultsByStudent.get(s.getId());
-            String score = r != null && r.getScore() != null ? r.getScore().toPlainString() : "";
-            String grade = r != null && r.getGrade() != null ? r.getGrade() : "";
-            String comment = r != null && r.getComment() != null ? r.getComment() : "";
+            tableModel.setData(dataList);
+            lblInfo.setText("Tổng số: " + students.size() + " học viên");
 
-            model.addRow(new Object[]{
-                    s.getFullName(),
-                    score,
-                    grade,
-                    comment
-            });
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Lỗi tải danh sách: " + ex.getMessage());
         }
     }
 
     private void saveResults() {
-
-        TeachingClass cls = (TeachingClass) cboClass.getSelectedItem();
-        if (cls == null) {
-            JOptionPane.showMessageDialog(this, "Chọn lớp.", "Lỗi", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        int saved = 0;
-        for (int i = 0; i < students.size(); i++) {
-
-            Student s = students.get(i);
-
-            Object scoreObj = model.getValueAt(i, 1);
-            String gradeStr = model.getValueAt(i, 2) != null ? model.getValueAt(i, 2).toString().trim() : "";
-            String commentStr = model.getValueAt(i, 3) != null ? model.getValueAt(i, 3).toString().trim() : "";
-
-            if (scoreObj == null || scoreObj.toString().trim().isEmpty()) continue;
-
-            BigDecimal score;
-            try {
-                score = new BigDecimal(scoreObj.toString().trim());
-            } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(this, "Điểm không hợp lệ tại dòng " + (i + 1) + ": " + scoreObj, "Lỗi", JOptionPane.ERROR_MESSAGE);
+        try {
+            TeachingClass cls = (TeachingClass) cboClass.getSelectedItem();
+            if (cls == null) {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn lớp.", "Lỗi", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
-            Result r = existingResultsByStudent.get(s.getId());
-            if (r == null) {
-                r = new Result();
-                r.setStudent(s);
-                r.setTeachingClass(cls);
+            int saved = 0;
+            for (int i = 0; i < students.size(); i++) {
+                Student s = students.get(i);
+
+                Object scoreObj = tableModel.getValueAt(i, 1);
+                String gradeStr = tableModel.getValueAt(i, 2) != null ? tableModel.getValueAt(i, 2).toString().trim() : "";
+                String commentStr = tableModel.getValueAt(i, 3) != null ? tableModel.getValueAt(i, 3).toString().trim() : "";
+
+                if (scoreObj == null || scoreObj.toString().trim().isEmpty()) continue;
+
+                BigDecimal score;
+                try {
+                    score = new BigDecimal(scoreObj.toString().trim());
+                } catch (NumberFormatException e) {
+                    JOptionPane.showMessageDialog(this, "Điểm không hợp lệ tại dòng " + (i + 1) + ": " + scoreObj, "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                Result r = existingResultsByStudent.get(s.getId());
+                if (r == null) {
+                    r = new Result();
+                    r.setStudent(s);
+                    r.setTeachingClass(cls);
+                }
+
+                r.setScore(score);
+                r.setGrade(gradeStr.isEmpty() ? null : gradeStr);
+                r.setComment(commentStr.isEmpty() ? null : commentStr);
+
+                resultService.saveResult(r);
+                saved++;
             }
 
-            r.setScore(score);
-            r.setGrade(gradeStr.isEmpty() ? null : gradeStr);
-            r.setComment(commentStr.isEmpty() ? null : commentStr);
+            JOptionPane.showMessageDialog(this, "Đã lưu " + saved + " kết quả.");
+            lblInfo.setText("Đã lưu: " + saved + " kết quả");
 
-            resultService.saveResult(r);
-            saved++;
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Lỗi lưu: " + ex.getMessage());
+        }
+    }
+
+    private static class ResultTableModel extends AbstractTableModel {
+
+        private final String[] columns = {
+                "Tên học viên",
+                "Điểm",
+                "Xếp loại",
+                "Nhận xét"
+        };
+
+        private List<ResultData> data = new ArrayList<>();
+
+        void setData(List<ResultData> data) {
+            this.data = data != null ? data : new ArrayList<>();
+            fireTableDataChanged();
         }
 
-        JOptionPane.showMessageDialog(this, "Đã lưu " + saved + " kết quả.");
-        loadStudents();
+        @Override
+        public int getRowCount() {
+            return data.size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return columns.length;
+        }
+
+        @Override
+        public String getColumnName(int c) {
+            return columns[c];
+        }
+
+        @Override
+        public Object getValueAt(int r, int c) {
+            if (r < 0 || r >= data.size()) return "";
+            ResultData d = data.get(r);
+
+            return switch (c) {
+                case 0 -> d.studentName;
+                case 1 -> d.score;
+                case 2 -> d.grade;
+                case 3 -> d.comment;
+                default -> "";
+            };
+        }
+
+        @Override
+        public void setValueAt(Object value, int r, int c) {
+            if (r < 0 || r >= data.size()) return;
+            ResultData d = data.get(r);
+
+            switch (c) {
+                case 1 -> d.score = value != null ? value.toString() : "";
+                case 2 -> d.grade = value != null ? value.toString() : "";
+                case 3 -> d.comment = value != null ? value.toString() : "";
+            }
+
+            fireTableCellUpdated(r, c);
+        }
+
+        @Override
+        public boolean isCellEditable(int r, int c) {
+            return c >= 1;
+        }
+    }
+
+    private static class ResultData {
+        String studentName;
+        Long studentId;
+        String score;
+        String grade;
+        String comment;
     }
 }

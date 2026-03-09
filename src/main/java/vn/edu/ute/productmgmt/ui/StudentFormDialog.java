@@ -1,15 +1,19 @@
 package vn.edu.ute.productmgmt.ui;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
 import vn.edu.ute.productmgmt.model.enums.Gender;
 
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Date;
-import javax.swing.*;
-import java.awt.*;
 
 /**
- * Form nhập liệu đơn giản cho Student, dùng mock object.
+ * Form nhập liệu cho Học viên, chuẩn hóa theo ClassFormDialog
  */
 public class StudentFormDialog extends JDialog {
 
@@ -20,22 +24,20 @@ public class StudentFormDialog extends JDialog {
     private final JTextField txtEmail = new JTextField(25);
     private final JTextField txtAddress = new JTextField(25);
     private final JComboBox<ActiveStatus> cboStatus = new JComboBox<>(ActiveStatus.values());
+
     private boolean saved = false;
     private final StudentFormData result;
 
     public StudentFormDialog(Window owner, StudentFormData existing) {
         super(owner, "Thông tin Học viên", ModalityType.APPLICATION_MODAL);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
-        // 1. Khởi tạo Spinner trước khi buildUI
-        SpinnerDateModel dateModel = new SpinnerDateModel(new Date(), null, null, Calendar.DAY_OF_MONTH);
-        spinnerDob = new JSpinner(dateModel);
-        JSpinner.DateEditor dateEditor = new JSpinner.DateEditor(spinnerDob, "dd/MM/yyyy");
-        spinnerDob.setEditor(dateEditor);
+        setSize(580, 680);
+        setLayout(new BorderLayout());
 
-        buildUI();
+        // Khởi tạo Spinner trước khi build UI
+        spinnerDob = createDateSpinner(new Date());
 
-        // 2. Đổ dữ liệu vào các field
+        // Đổ dữ liệu vào các field
         if (existing != null) {
             this.result = existing;
             txtFullName.setText(existing.getFullName());
@@ -48,71 +50,107 @@ public class StudentFormDialog extends JDialog {
             // Xử lý ngày sinh từ String sang Date cho Spinner
             try {
                 if (existing.getDateOfBirth() != null) {
-                    java.time.LocalDate ld = java.time.LocalDate.parse(existing.getDateOfBirth());
-                    java.util.Date date = java.util.Date.from(ld.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+                    LocalDate ld = LocalDate.parse(existing.getDateOfBirth());
+                    Date date = Date.from(ld.atStartOfDay(ZoneId.systemDefault()).toInstant());
                     spinnerDob.setValue(date);
                 }
             } catch (Exception e) {
-                spinnerDob.setValue(new Date()); // Mặc định là ngày hiện tại nếu lỗi format
+                spinnerDob.setValue(new Date());
             }
         } else {
-            // 'result' là final, khởi tạo trong nhánh này nếu không có existing
-            // Sử dụng reflection of previous logic - assign here
-            // (constructor đảm bảo result được gán trong mọi nhánh)
-            // Note: we assign to the final field below.
-            // To keep code clear, assign directly:
-            // (the field is final and must be assigned exactly once per constructor)
-            // Since Java doesn't allow duplicate assignment, we keep current structure.
-            // We'll assign here:
-            //noinspection ResultOfObjectAllocationIgnored
-            result = new StudentFormData();
+            this.result = new StudentFormData();
         }
 
-        pack();
+        buildUI();
         setLocationRelativeTo(owner);
     }
 
-    private void buildUI() {
-        JPanel form = new JPanel(new GridBagLayout());
-        GridBagConstraints g = new GridBagConstraints();
-        g.insets = new Insets(6, 6, 6, 6);
-        g.anchor = GridBagConstraints.WEST;
-        g.fill = GridBagConstraints.HORIZONTAL; // Để các field dãn đều
-
-        int r = 0;
-        // Sử dụng hàm helper để add row cho sạch code
-        addFormRow(form, "Họ và tên:", txtFullName, g, r); r++;
-        addFormRow(form, "Ngày sinh:", spinnerDob, g, r); r++; // Đã sửa: dùng spinnerDob thay vì txtDob
-        addFormRow(form, "Giới tính:", cboGender, g, r); r++;
-        addFormRow(form, "Điện thoại:", txtPhone, g, r); r++;
-        addFormRow(form, "Email:", txtEmail, g, r); r++;
-        addFormRow(form, "Địa chỉ:", txtAddress, g, r); r++;
-        addFormRow(form, "Trạng thái:", cboStatus, g, r);
-
-        JButton btnSave = new JButton("Lưu");
-        JButton btnCancel = new JButton("Hủy");
-
-        btnSave.addActionListener(e -> onSave());
-        btnCancel.addActionListener(e -> dispose());
-
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        actions.add(btnSave);
-        actions.add(btnCancel);
-
-        getContentPane().setLayout(new BorderLayout(10, 10));
-        getContentPane().add(form, BorderLayout.CENTER);
-        getContentPane().add(actions, BorderLayout.SOUTH);
+    private JSpinner createDateSpinner(Date defaultDate) {
+        SpinnerDateModel model = new SpinnerDateModel(defaultDate, null, null, Calendar.DAY_OF_MONTH);
+        JSpinner spinner = new JSpinner(model);
+        spinner.setEditor(new JSpinner.DateEditor(spinner, "dd/MM/yyyy"));
+        spinner.setPreferredSize(new Dimension(0, 40));
+        spinner.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
+        return spinner;
     }
 
-    // Hàm helper giúp giảm lặp code GridBagConstraints
-    private void addFormRow(JPanel p, String label, JComponent comp, GridBagConstraints g, int row) {
-        g.gridy = row;
-        g.gridx = 0; g.weightx = 0; p.add(new JLabel(label), g);
-        g.gridx = 1; g.weightx = 1.0; p.add(comp, g);
+    private void buildUI() {
+        JPanel root = new JPanel(new BorderLayout());
+        root.setBackground(Color.WHITE);
+        root.setBorder(new EmptyBorder(30, 40, 30, 40));
+
+        // --- Header ---
+        JLabel lblHeader = new JLabel("Thông tin Học viên");
+        lblHeader.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblHeader.setBorder(new EmptyBorder(0, 0, 25, 0));
+        root.add(lblHeader, BorderLayout.NORTH);
+
+        // --- Form Body ---
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(8, 0, 8, 0);
+
+        // Các hàng dữ liệu
+        addFormRow(form, gbc, 0, "Họ và tên:", txtFullName);
+        addFormRow(form, gbc, 1, "Ngày sinh:", spinnerDob);
+        addFormRow(form, gbc, 2, "Giới tính:", cboGender);
+        addFormRow(form, gbc, 3, "Số điện thoại:", txtPhone);
+        addFormRow(form, gbc, 4, "Email:", txtEmail);
+        addFormRow(form, gbc, 5, "Địa chỉ:", txtAddress);
+        addFormRow(form, gbc, 6, "Trạng thái:", cboStatus);
+
+        root.add(form, BorderLayout.CENTER);
+
+        // --- Buttons ---
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
+        footer.setOpaque(false);
+        footer.setBorder(new EmptyBorder(25, 0, 0, 0));
+
+        JButton btnCancel = new JButton("Hủy");
+        btnCancel.setPreferredSize(new Dimension(100, 42));
+        btnCancel.putClientProperty(FlatClientProperties.STYLE, "arc: 12; background: #f2f2f2; borderWidth: 0");
+        btnCancel.addActionListener(e -> dispose());
+
+        JButton btnSave = new JButton("Lưu Học viên");
+        btnSave.setPreferredSize(new Dimension(140, 42));
+        btnSave.putClientProperty(FlatClientProperties.STYLE, "arc: 12; background: #198754; foreground: #ffffff; borderWidth: 0");
+        btnSave.addActionListener(e -> onSave());
+
+        footer.add(btnCancel);
+        footer.add(btnSave);
+        root.add(footer, BorderLayout.SOUTH);
+
+        add(root);
+    }
+
+    private void addFormRow(JPanel p, GridBagConstraints gbc, int row, String label, JComponent comp) {
+        gbc.gridy = row;
+        gbc.gridx = 0; gbc.weightx = 0;
+        gbc.insets = new Insets(8, 0, 8, 0);
+        p.add(createLabel(label), gbc);
+
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.insets = new Insets(8, 20, 8, 0);
+        if (comp instanceof JComboBox || comp instanceof JSpinner || comp instanceof JTextField) {
+            comp.setPreferredSize(new Dimension(0, 40));
+            comp.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
+        }
+        p.add(comp, gbc);
+    }
+
+    private JLabel createLabel(String text) {
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 14));
+        lbl.setForeground(new Color(80, 80, 80));
+        return lbl;
     }
 
     private void onSave() {
         try {
+            spinnerDob.commitEdit();
+
             String fullName = txtFullName.getText().trim();
             if (fullName.isEmpty()) {
                 throw new IllegalArgumentException("Họ và tên không được để trống.");
@@ -127,25 +165,26 @@ public class StudentFormDialog extends JDialog {
             if (email.isEmpty()) {
                 throw new IllegalArgumentException("Email không được để trống.");
             }
-            // Lấy Date từ spinner và chuyển thành String (yyyy-MM-dd) để lưu vào DTO
-            Date dateValue = (Date) spinnerDob.getValue();
-            java.time.LocalDate localDate = dateValue.toInstant()
-                    .atZone(java.time.ZoneId.systemDefault())
-                    .toLocalDate();
 
-            result.setDateOfBirth(localDate.toString());
+            LocalDate localDate = toLocalDate((Date) spinnerDob.getValue());
+
             result.setFullName(fullName);
+            result.setDateOfBirth(localDate.toString());
             result.setGender((Gender) cboGender.getSelectedItem());
             result.setPhone(phone);
             result.setEmail(email);
             result.setAddress(txtAddress.getText().trim());
             result.setStatus((ActiveStatus) cboStatus.getSelectedItem());
+
             saved = true;
             dispose();
         } catch (Exception ex) {
-            // Hiển thị thông báo lỗi bằng tiếng Việt (sử dụng message từ exception nếu có)
-            JOptionPane.showMessageDialog(this, ex.getMessage());
+            JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage(), "Thông báo lỗi", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private LocalDate toLocalDate(Date date) {
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
     public boolean isSaved() {

@@ -1,9 +1,11 @@
 package vn.edu.ute.productmgmt.ui;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
 import vn.edu.ute.productmgmt.model.enums.DiscountType;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -11,12 +13,9 @@ import java.util.Date;
 import java.util.Calendar;
 
 /**
- * Form nhập liệu cho Promotion, theo mẫu CourseFormDialog.
- * Dùng JSpinner (SpinnerDateModel) để chọn ngày thay vì nhập tay.
+ * Form nhập liệu cho Khuyến mãi, chuẩn hóa theo ClassFormDialog
  */
 public class PromotionFormDialog extends JDialog {
-
-    private static final String DATE_FORMAT = "dd/MM/yyyy";
 
     private final JTextField txtPromoName = new JTextField(25);
     private final JComboBox<DiscountType> cboDiscountType = new JComboBox<>(DiscountType.values());
@@ -31,8 +30,10 @@ public class PromotionFormDialog extends JDialog {
     private PromotionFormData result;
 
     public PromotionFormDialog(Window owner, PromotionFormData existing) {
-        super(owner, "Khuyến mãi", ModalityType.APPLICATION_MODAL);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        super(owner, "Thông tin Khuyến mãi", ModalityType.APPLICATION_MODAL);
+
+        setSize(580, 680);
+        setLayout(new BorderLayout());
 
         spnStartDate = createDateSpinner();
         spnEndDate = createDateSpinner();
@@ -57,16 +58,15 @@ public class PromotionFormDialog extends JDialog {
             updateDateSpinnersEnabled();
         }
 
-        pack();
         setLocationRelativeTo(owner);
     }
 
     private JSpinner createDateSpinner() {
         SpinnerDateModel model = new SpinnerDateModel(new Date(), null, null, Calendar.DAY_OF_MONTH);
         JSpinner spinner = new JSpinner(model);
-        JSpinner.DateEditor editor = new JSpinner.DateEditor(spinner, DATE_FORMAT);
-        spinner.setEditor(editor);
-        spinner.setPreferredSize(new Dimension(120, spinner.getPreferredSize().height));
+        spinner.setEditor(new JSpinner.DateEditor(spinner, "dd/MM/yyyy"));
+        spinner.setPreferredSize(new Dimension(0, 40));
+        spinner.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
         return spinner;
     }
 
@@ -84,12 +84,11 @@ public class PromotionFormDialog extends JDialog {
         spnEndDate.setEnabled(!chkNoEndDate.isSelected());
     }
 
-    /** Đọc ngày từ spinner; gọi commitEdit() trước để giá trị trong ô được ghi vào model. */
     private String getSpinnerDateString(JSpinner spinner) {
         if (!spinner.isEnabled()) return "";
         try {
             spinner.commitEdit();
-        } catch (Exception ignored) { /* editor chưa chỉnh sửa */ }
+        } catch (Exception ignored) { }
         try {
             Object v = spinner.getValue();
             if (v instanceof Date) {
@@ -108,78 +107,96 @@ public class PromotionFormDialog extends JDialog {
     }
 
     private void buildUI() {
+        JPanel root = new JPanel(new BorderLayout());
+        root.setBackground(Color.WHITE);
+        root.setBorder(new EmptyBorder(30, 40, 30, 40));
+
+        // --- Header ---
+        JLabel lblHeader = new JLabel("Thông tin Khuyến mãi");
+        lblHeader.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblHeader.setBorder(new EmptyBorder(0, 0, 25, 0));
+        root.add(lblHeader, BorderLayout.NORTH);
+
+        // --- Form Body ---
         JPanel form = new JPanel(new GridBagLayout());
-        GridBagConstraints g = new GridBagConstraints();
-        g.insets = new Insets(6, 6, 6, 6);
-        g.anchor = GridBagConstraints.WEST;
-        g.fill = GridBagConstraints.HORIZONTAL;
+        form.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(8, 0, 8, 0);
 
-        int r = 0;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Tên khuyến mãi:"), g);
-        g.gridx = 1;
-        form.add(txtPromoName, g);
+        // Các hàng dữ liệu
+        addFormRow(form, gbc, 0, "Tên khuyến mãi:", txtPromoName);
+        addFormRow(form, gbc, 1, "Loại giảm giá:", cboDiscountType);
+        addFormRow(form, gbc, 2, "Giá trị giảm:", txtDiscountValue);
+        addFormRowWithCheckbox(form, gbc, 3, "Ngày bắt đầu:", spnStartDate, chkNoStartDate);
+        addFormRowWithCheckbox(form, gbc, 4, "Ngày kết thúc:", spnEndDate, chkNoEndDate);
+        addFormRow(form, gbc, 5, "Trạng thái:", cboStatus);
 
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Loại giảm giá:"), g);
-        g.gridx = 1;
-        form.add(cboDiscountType, g);
+        root.add(form, BorderLayout.CENTER);
 
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Giá trị giảm:"), g);
-        g.gridx = 1;
-        JPanel valuePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-        valuePanel.add(txtDiscountValue);
-        valuePanel.add(new JLabel("(% hoặc số tiền)"));
-        form.add(valuePanel, g);
+        // --- Buttons ---
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
+        footer.setOpaque(false);
+        footer.setBorder(new EmptyBorder(25, 0, 0, 0));
 
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Ngày bắt đầu:"), g);
-        g.gridx = 1;
-        JPanel startPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-        startPanel.add(spnStartDate);
-        chkNoStartDate.addActionListener(e -> updateDateSpinnersEnabled());
-        startPanel.add(chkNoStartDate);
-        form.add(startPanel, g);
-
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Ngày kết thúc:"), g);
-        g.gridx = 1;
-        JPanel endPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-        endPanel.add(spnEndDate);
-        chkNoEndDate.addActionListener(e -> updateDateSpinnersEnabled());
-        endPanel.add(chkNoEndDate);
-        form.add(endPanel, g);
-
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Trạng thái:"), g);
-        g.gridx = 1;
-        form.add(cboStatus, g);
-
-        JButton btnSave = new JButton("Lưu");
         JButton btnCancel = new JButton("Hủy");
-
-        btnSave.addActionListener(e -> onSave());
+        btnCancel.setPreferredSize(new Dimension(100, 42));
+        btnCancel.putClientProperty(FlatClientProperties.STYLE, "arc: 12; background: #f2f2f2; borderWidth: 0");
         btnCancel.addActionListener(e -> dispose());
 
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        actions.add(btnSave);
-        actions.add(btnCancel);
+        JButton btnSave = new JButton("Lưu Khuyến mãi");
+        btnSave.setPreferredSize(new Dimension(140, 42));
+        btnSave.putClientProperty(FlatClientProperties.STYLE, "arc: 12; background: #198754; foreground: #ffffff; borderWidth: 0");
+        btnSave.addActionListener(e -> onSave());
 
-        getContentPane().setLayout(new BorderLayout(10, 10));
-        getContentPane().add(form, BorderLayout.CENTER);
-        getContentPane().add(actions, BorderLayout.SOUTH);
+        footer.add(btnCancel);
+        footer.add(btnSave);
+        root.add(footer, BorderLayout.SOUTH);
+
+        add(root);
+    }
+
+    private void addFormRow(JPanel p, GridBagConstraints gbc, int row, String label, JComponent comp) {
+        gbc.gridy = row;
+        gbc.gridx = 0; gbc.weightx = 0;
+        gbc.insets = new Insets(8, 0, 8, 0);
+        p.add(createLabel(label), gbc);
+
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.insets = new Insets(8, 20, 8, 0);
+        if (comp instanceof JComboBox || comp instanceof JSpinner || comp instanceof JTextField) {
+            comp.setPreferredSize(new Dimension(0, 40));
+            comp.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
+        }
+        p.add(comp, gbc);
+    }
+
+    private void addFormRowWithCheckbox(JPanel p, GridBagConstraints gbc, int row, String label, JComponent comp, JCheckBox chk) {
+        gbc.gridy = row;
+        gbc.gridx = 0; gbc.weightx = 0;
+        gbc.insets = new Insets(8, 0, 8, 0);
+        p.add(createLabel(label), gbc);
+
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.insets = new Insets(8, 20, 8, 0);
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        panel.setOpaque(false);
+        if (comp instanceof JSpinner) {
+            comp.setPreferredSize(new Dimension(150, 40));
+            comp.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
+        }
+        chk.setOpaque(false);
+        chk.addActionListener(e -> updateDateSpinnersEnabled());
+        panel.add(comp);
+        panel.add(chk);
+        p.add(panel, gbc);
+    }
+
+    private JLabel createLabel(String text) {
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 14));
+        lbl.setForeground(new Color(80, 80, 80));
+        return lbl;
     }
 
     private void onSave() {
@@ -199,7 +216,7 @@ public class PromotionFormDialog extends JDialog {
             saved = true;
             dispose();
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage(), "Thông báo lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -211,6 +228,9 @@ public class PromotionFormDialog extends JDialog {
         return result;
     }
 
+    /**
+     * DTO đơn giản đại diện thông tin Khuyến mãi cho UI.
+     */
     public static class PromotionFormData {
         private String promoName;
         private DiscountType discountType;

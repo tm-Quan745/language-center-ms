@@ -356,22 +356,36 @@ public class LcmsMainFrame extends JFrame {
     }
 
     private void showNotificationPopup(Component anchor) {
+
         JDialog popup = new JDialog(this, "Thông báo hệ thống", false);
         popup.setLayout(new BorderLayout());
-        popup.getRootPane().putClientProperty(FlatClientProperties.TITLE_BAR_SHOW_ICON, false);
 
         DefaultListModel<String> model = new DefaultListModel<>();
+
+        if(cachedNotifications.isEmpty()){
+            model.addElement("Không có thông báo");
+        }
+
         for (Notification n : cachedNotifications) {
-            model.addElement("<html><b>" + n.getTitle() + "</b><br><small>" + n.getContent() + "</small></html>");
+            model.addElement(
+                    "<html><b>" + n.getTitle() +
+                            "</b><br><small>" +
+                            n.getContent() +
+                            "</small></html>"
+            );
         }
 
         JList<String> list = new JList<>(model);
         list.setFixedCellHeight(60);
-        list.setBorder(new EmptyBorder(10, 10, 10, 10));
+        list.setBorder(new EmptyBorder(10,10,10,10));
 
         popup.add(new JScrollPane(list), BorderLayout.CENTER);
-        popup.setSize(350, 450);
-        popup.setLocationRelativeTo(anchor);
+
+        popup.setSize(350,450);
+
+        Point p = anchor.getLocationOnScreen();
+        popup.setLocation(p.x - 300, p.y + 40);
+
         popup.setVisible(true);
     }
 }

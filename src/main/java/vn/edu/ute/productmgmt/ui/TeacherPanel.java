@@ -1,10 +1,12 @@
 package vn.edu.ute.productmgmt.ui;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import vn.edu.ute.productmgmt.model.Teacher;
 import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
 import vn.edu.ute.productmgmt.service.TeacherService;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.time.LocalDate;
@@ -13,15 +15,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Panel quản lý giáo viên, ghép với TeacherService.
+ * Panel quản lý giáo viên, chuẩn hóa theo ClassPanel
  */
 public class TeacherPanel extends JPanel {
 
     private final TeacherService teacherService;
 
-    private final JTextField txtSearch = new JTextField(20);
-    private final JComboBox<String> cboSpecialtyFilter =
-            new JComboBox<>(new String[]{"Tất cả", "IELTS", "TOEIC", "Communication"});
+    private final JTextField txtSearch = new JTextField(18);
     private final JLabel lblInfo = new JLabel(" ");
 
     private final TeacherTableModel tableModel = new TeacherTableModel();
@@ -30,199 +30,279 @@ public class TeacherPanel extends JPanel {
 
     public TeacherPanel(TeacherService teacherService) {
         this.teacherService = teacherService;
-        setLayout(new BorderLayout(8, 8));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        setLayout(new BorderLayout(20, 20));
+        setOpaque(false);
+        setBorder(new EmptyBorder(10, 10, 10, 10));
+
         buildUI();
+
         table.getSelectionModel().addListSelectionListener(e -> {
             if (e.getValueIsAdjusting()) return;
             onTableSelection();
         });
+
         loadTableAll();
     }
 
     private void buildUI() {
-        add(buildActionBar(), BorderLayout.NORTH);
+
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+
+        JLabel title = new JLabel("Quản lý Giáo viên");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 22));
+
+        header.add(title, BorderLayout.WEST);
+        header.add(buildActionBar(), BorderLayout.EAST);
+
+        add(header, BorderLayout.NORTH);
+
         add(buildTableArea(), BorderLayout.CENTER);
-        add(lblInfo, BorderLayout.SOUTH);
+
+        JPanel statusBar = new JPanel(new BorderLayout());
+        statusBar.setOpaque(false);
+
+        lblInfo.setForeground(Color.GRAY);
+        lblInfo.setFont(new Font("Segoe UI", Font.ITALIC, 13));
+
+        statusBar.add(lblInfo, BorderLayout.WEST);
+
+        add(statusBar, BorderLayout.SOUTH);
     }
 
     private JComponent buildActionBar() {
-        JPanel bar = new JPanel(new BorderLayout(8, 4));
 
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
-        left.add(new JLabel("Tìm (tên/SĐT):"));
-        left.add(txtSearch);
-        left.add(new JLabel("Chuyên môn:"));
-        left.add(cboSpecialtyFilter);
-        JButton btnSearch = new JButton("Lọc");
-        btnSearch.addActionListener(e -> onSearch());
-        left.add(btnSearch);
+        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        bar.setOpaque(false);
 
-        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
-        JButton btnAdd = new JButton("Thêm mới");
-        JButton btnEdit = new JButton("Sửa");
-        JButton btnDelete = new JButton("Xóa");
+        txtSearch.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Tìm giáo viên...");
+        txtSearch.setPreferredSize(new Dimension(180, 36));
+
+        JButton btnSearch = new JButton("Tìm");
+        btnSearch.setPreferredSize(new Dimension(70, 36));
+
+        JButton btnAdd = createBtn("Thêm", "#0d6efd", "➕ ");
+        JButton btnEdit = createBtn("Sửa", "#ffc107", "📝 ");
+        JButton btnDelete = createBtn("Xóa", "#dc3545", "🗑 ");
         JButton btnRefresh = new JButton("Tải lại");
 
+        btnRefresh.setPreferredSize(new Dimension(90, 36));
+        btnRefresh.putClientProperty(FlatClientProperties.STYLE, "arc:10");
+
+        btnSearch.addActionListener(e -> onSearch());
         btnAdd.addActionListener(e -> onAdd());
         btnEdit.addActionListener(e -> onEdit());
         btnDelete.addActionListener(e -> onDelete());
         btnRefresh.addActionListener(e -> loadTableAll());
 
-        right.add(btnAdd);
-        right.add(btnEdit);
-        right.add(btnDelete);
-        right.add(btnRefresh);
+        bar.add(txtSearch);
+        bar.add(btnSearch);
+        bar.add(btnRefresh);
+        bar.add(btnAdd);
+        bar.add(btnEdit);
+        bar.add(btnDelete);
 
-        bar.add(left, BorderLayout.WEST);
-        bar.add(right, BorderLayout.EAST);
         return bar;
     }
 
+    private JButton createBtn(String text, String color, String icon) {
+
+        JButton btn = new JButton(icon + text);
+
+        btn.setPreferredSize(new Dimension(110, 36));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        String fg = color.equals("#ffc107") ? "#000000" : "#ffffff";
+
+        btn.putClientProperty(FlatClientProperties.STYLE,
+                "background:" + color +
+                        ";foreground:" + fg +
+                        ";arc:10;borderWidth:0");
+
+        return btn;
+    }
+
     private JComponent buildTableArea() {
-        UI.styleTable(table);
-        return new JScrollPane(table);
+
+        JScrollPane scroll = new JScrollPane(table);
+
+        scroll.putClientProperty(FlatClientProperties.STYLE, "arc:15");
+        scroll.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230)));
+
+        table.setRowHeight(45);
+        table.setShowVerticalLines(false);
+
+        table.getTableHeader().setFont(new Font("Segoe UI Semibold", Font.PLAIN, 14));
+        table.getTableHeader().setPreferredSize(new Dimension(0, 45));
+
+        return scroll;
     }
 
     private void loadTableAll() {
+
         try {
+
             List<Teacher> list = teacherService.findAll();
+
             tableModel.setData(list);
-            lblInfo.setText("Tổng số: " + list.size() + " giáo viên.");
-            clearSelection();
+
+            lblInfo.setText("Tổng số: " + list.size() + " giáo viên");
+
+            table.clearSelection();
+
+            selectedTeacher = null;
+
         } catch (Exception ex) {
-            lblInfo.setText("Lỗi: " + ex.getMessage());
-            JOptionPane.showMessageDialog(this,
-                    "Không tải được danh sách giáo viên: " + ex.getMessage(),
-                    "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
-    }
 
-    private void loadTableFiltered(String keyword, String specialtyFilter) {
-        try {
-            List<Teacher> list = teacherService.findAll();
-            String kw = keyword == null ? "" : keyword.trim().toLowerCase();
-            String spec = specialtyFilter == null ? "" : specialtyFilter.trim().toLowerCase();
+            JOptionPane.showMessageDialog(this, "Lỗi tải dữ liệu: " + ex.getMessage());
 
-            List<Teacher> filtered = new ArrayList<>();
-            for (Teacher t : list) {
-                boolean matchKw = kw.isEmpty()
-                        || (t.getFullName() != null && t.getFullName().toLowerCase().contains(kw))
-                        || (t.getPhone() != null && t.getPhone().toLowerCase().contains(kw));
-                boolean matchSpec = spec.isEmpty()
-                        || "tất cả".equals(spec)
-                        || (t.getSpecialty() != null && t.getSpecialty().toLowerCase().contains(spec));
-                if (matchKw && matchSpec) {
-                    filtered.add(t);
-                }
-            }
-
-            tableModel.setData(filtered);
-            lblInfo.setText("Kết quả: " + filtered.size() + " giáo viên.");
-            clearSelection();
-        } catch (Exception ex) {
-            lblInfo.setText("Lỗi: " + ex.getMessage());
-            JOptionPane.showMessageDialog(this,
-                    "Không lọc được danh sách giáo viên: " + ex.getMessage(),
-                    "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void onSearch() {
-        String keyword = txtSearch.getText();
-        String spec = (String) cboSpecialtyFilter.getSelectedItem();
-        loadTableFiltered(keyword, spec);
+
+        String kw = txtSearch.getText().trim().toLowerCase();
+
+        List<Teacher> all = teacherService.findAll();
+
+        List<Teacher> filtered = new ArrayList<>();
+
+        for (Teacher t : all) {
+
+            if ((t.getFullName() != null &&
+                    t.getFullName().toLowerCase().contains(kw)) ||
+                    (t.getPhone() != null &&
+                            t.getPhone().toLowerCase().contains(kw)) ||
+                    (t.getSpecialty() != null &&
+                            t.getSpecialty().toLowerCase().contains(kw))) {
+
+                filtered.add(t);
+
+            }
+
+        }
+
+        tableModel.setData(filtered);
+
+        lblInfo.setText("Tìm thấy: " + filtered.size() + " kết quả");
+
     }
 
     private void onTableSelection() {
+
         int row = table.getSelectedRow();
+
         if (row < 0) {
+
             selectedTeacher = null;
+
             return;
+
         }
+
         selectedTeacher = tableModel.getTeacherAt(row);
+
     }
 
     private void onAdd() {
+
         TeacherFormDialog dialog = new TeacherFormDialog(
                 SwingUtilities.getWindowAncestor(this),
                 null
         );
-        dialog.setVisible(true);
-        if (!dialog.isSaved()) return;
 
-        TeacherFormDialog.TeacherFormData data = dialog.getResult();
-        Teacher t = formDataToTeacher(data, null);
-        if (t == null) return;
-        try {
-            teacherService.create(t);
-            JOptionPane.showMessageDialog(this,
-                    "Đã thêm giáo viên.",
-                    "Thành công",
-                    JOptionPane.INFORMATION_MESSAGE);
-            loadTableAll();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(),
-                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+        dialog.setVisible(true);
+
+        if (dialog.isSaved()) {
+
+            try {
+
+                TeacherFormDialog.TeacherFormData data = dialog.getResult();
+                Teacher t = formDataToTeacher(data, null);
+                if (t == null) return;
+
+                teacherService.create(t);
+
+                loadTableAll();
+
+            } catch (Exception ex) {
+
+                JOptionPane.showMessageDialog(this, "Lỗi thêm giáo viên: " + ex.getMessage());
+
+            }
+
         }
+
     }
 
     private void onEdit() {
+
         if (selectedTeacher == null) {
-            JOptionPane.showMessageDialog(this,
-                    "Chọn một giáo viên để sửa.",
-                    "Chưa chọn",
-                    JOptionPane.WARNING_MESSAGE);
+
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn giáo viên để sửa");
+
             return;
+
         }
+
         TeacherFormDialog.TeacherFormData existing = teacherToFormData(selectedTeacher);
         TeacherFormDialog dialog = new TeacherFormDialog(
                 SwingUtilities.getWindowAncestor(this),
                 existing
         );
-        dialog.setVisible(true);
-        if (!dialog.isSaved()) return;
 
-        TeacherFormDialog.TeacherFormData data = dialog.getResult();
-        Teacher t = formDataToTeacher(data, selectedTeacher.getId());
-        if (t == null) return;
-        try {
-            teacherService.update(t);
-            JOptionPane.showMessageDialog(this,
-                    "Đã cập nhật giáo viên.",
-                    "Thành công",
-                    JOptionPane.INFORMATION_MESSAGE);
-            loadTableAll();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(),
-                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+        dialog.setVisible(true);
+
+        if (dialog.isSaved()) {
+
+            try {
+
+                TeacherFormDialog.TeacherFormData data = dialog.getResult();
+                Teacher t = formDataToTeacher(data, selectedTeacher.getId());
+                if (t == null) return;
+
+                teacherService.update(t);
+
+                loadTableAll();
+
+            } catch (Exception ex) {
+
+                JOptionPane.showMessageDialog(this, "Lỗi cập nhật: " + ex.getMessage());
+
+            }
+
         }
+
     }
 
     private void onDelete() {
-        if (selectedTeacher == null) {
-            JOptionPane.showMessageDialog(this,
-                    "Chọn một giáo viên để xóa.",
-                    "Chưa chọn",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        int ok = JOptionPane.showConfirmDialog(this,
-                "Bạn có chắc muốn xóa giáo viên này?",
+
+        if (selectedTeacher == null) return;
+
+        int ok = JOptionPane.showConfirmDialog(
+                this,
+                "Xóa giáo viên " + selectedTeacher.getFullName() + " ?",
                 "Xác nhận",
-                JOptionPane.YES_NO_OPTION);
-        if (ok != JOptionPane.YES_OPTION) return;
-        try {
-            teacherService.delete(selectedTeacher.getId());
-            JOptionPane.showMessageDialog(this,
-                    "Đã xóa giáo viên.",
-                    "Thành công",
-                    JOptionPane.INFORMATION_MESSAGE);
-            loadTableAll();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(),
-                    "Lỗi", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (ok == JOptionPane.YES_OPTION) {
+
+            try {
+
+                teacherService.delete(selectedTeacher.getId());
+
+                loadTableAll();
+
+            } catch (Exception ex) {
+
+                JOptionPane.showMessageDialog(this, "Lỗi xóa: " + ex.getMessage());
+
+            }
+
         }
+
     }
 
     private TeacherFormDialog.TeacherFormData teacherToFormData(Teacher t) {
@@ -244,23 +324,17 @@ public class TeacherPanel extends JPanel {
         String hireDateStr = data.getHireDate() != null ? data.getHireDate().trim() : "";
 
         if (fullName.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "Tên giáo viên không được để trống.",
-                    "Lỗi",
+            JOptionPane.showMessageDialog(this, "Tên giáo viên không được để trống.", "Lỗi",
                     JOptionPane.WARNING_MESSAGE);
             return null;
         }
         if (phone.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "Số điện thoại không được để trống.",
-                    "Lỗi",
+            JOptionPane.showMessageDialog(this, "Số điện thoại không được để trống.", "Lỗi",
                     JOptionPane.WARNING_MESSAGE);
             return null;
         }
         if (email.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "Email không được để trống.",
-                    "Lỗi",
+            JOptionPane.showMessageDialog(this, "Email không được để trống.", "Lỗi",
                     JOptionPane.WARNING_MESSAGE);
             return null;
         }
@@ -271,7 +345,7 @@ public class TeacherPanel extends JPanel {
                 hireDate = LocalDate.parse(hireDateStr);
             } catch (DateTimeParseException ex) {
                 JOptionPane.showMessageDialog(this,
-                        "Ngày tuyển dụng không hợp lệ. Định dạng đúng: yyyy-MM-dd.",
+                        "Ngày vào làm không hợp lệ. Định dạng đúng: yyyy-MM-dd.",
                         "Lỗi",
                         JOptionPane.WARNING_MESSAGE);
                 return null;
@@ -289,68 +363,79 @@ public class TeacherPanel extends JPanel {
         return t;
     }
 
-    private void clearSelection() {
-        selectedTeacher = null;
-        table.clearSelection();
-    }
-
-    // === Table model ===
     private static class TeacherTableModel extends AbstractTableModel {
+
         private final String[] columns = {
-                "ID",
+                "Mã giáo viên",
                 "Họ tên",
-                "SĐT",
+                "Số điện thoại",
                 "Email",
                 "Chuyên môn",
                 "Trạng thái"
         };
+
         private List<Teacher> data = new ArrayList<>();
 
         void setData(List<Teacher> data) {
+
             this.data = data != null ? data : new ArrayList<>();
+
             fireTableDataChanged();
+
         }
 
-        Teacher getTeacherAt(int row) {
-            if (row < 0 || row >= data.size()) return null;
-            return data.get(row);
+        Teacher getTeacherAt(int r) {
+
+            return data.get(r);
+
         }
 
         @Override
         public int getRowCount() {
+
             return data.size();
+
         }
 
         @Override
         public int getColumnCount() {
+
             return columns.length;
+
         }
 
         @Override
-        public String getColumnName(int column) {
-            return columns[column];
+        public String getColumnName(int c) {
+
+            return columns[c];
+
         }
 
         @Override
-        public Object getValueAt(int rowIndex, int columnIndex) {
-            Teacher t = data.get(rowIndex);
-            switch (columnIndex) {
-                case 0:
-                    return t.getId();
-                case 1:
-                    return t.getFullName();
-                case 2:
-                    return t.getPhone();
-                case 3:
-                    return t.getEmail();
-                case 4:
-                    return t.getSpecialty();
-                case 5:
-                    return t.getStatus() != null ? t.getStatus().name() : "";
-                default:
-                    return "";
-            }
+        public Object getValueAt(int r, int c) {
+
+            Teacher t = data.get(r);
+
+            return switch (c) {
+
+                case 0 -> t.getId();
+
+                case 1 -> t.getFullName();
+
+                case 2 -> t.getPhone();
+
+                case 3 -> t.getEmail();
+
+                case 4 -> t.getSpecialty() != null ? t.getSpecialty() : "";
+
+                case 5 -> t.getStatus() != null ? t.getStatus().name() : "";
+
+                default -> "";
+
+            };
+
         }
+
     }
-}
 
+}

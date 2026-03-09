@@ -1,30 +1,27 @@
 package vn.edu.ute.productmgmt.ui;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import vn.edu.ute.productmgmt.model.Room;
 import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
 import vn.edu.ute.productmgmt.service.BranchService;
 import vn.edu.ute.productmgmt.service.RoomService;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Panel Phòng học: form (Tên phòng, Sức chứa) + JTable danh sách, ghép RoomService.
+ * Panel quản lý phòng học, chuẩn hóa theo ClassPanel
  */
 public class RoomPanel extends JPanel {
 
     private final RoomService roomService;
     private final BranchService branchService;
 
-    private final JTextField txtRoomName = new JTextField(25);
-    private final JTextField txtCapacity = new JTextField(10);
-    private final JTextField txtLocation = new JTextField(25);
-    private final JComboBox<ActiveStatus> cboStatus = new JComboBox<>(ActiveStatus.values());
     private final JLabel lblInfo = new JLabel(" ");
-
     private final RoomTableModel tableModel = new RoomTableModel();
     private final JTable table = new JTable(tableModel);
     private Room selectedRoom;
@@ -32,134 +29,244 @@ public class RoomPanel extends JPanel {
     public RoomPanel(RoomService roomService, BranchService branchService) {
         this.roomService = roomService;
         this.branchService = branchService;
-        setLayout(new BorderLayout(8, 8));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        setLayout(new BorderLayout(20, 20));
+        setOpaque(false);
+        setBorder(new EmptyBorder(10, 10, 10, 10));
+
         buildUI();
+
         table.getSelectionModel().addListSelectionListener(e -> {
             if (e.getValueIsAdjusting()) return;
             onTableSelection();
         });
+
         loadTable();
     }
 
     private void buildUI() {
-        add(buildActionBar(), BorderLayout.NORTH);
-        add(buildFormAndTable(), BorderLayout.CENTER);
-        add(lblInfo, BorderLayout.SOUTH);
+
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+
+        JLabel title = new JLabel("Quản lý Phòng học");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 22));
+
+        header.add(title, BorderLayout.WEST);
+        header.add(buildActionBar(), BorderLayout.EAST);
+
+        add(header, BorderLayout.NORTH);
+
+        add(buildTableArea(), BorderLayout.CENTER);
+
+        JPanel statusBar = new JPanel(new BorderLayout());
+        statusBar.setOpaque(false);
+
+        lblInfo.setForeground(Color.GRAY);
+        lblInfo.setFont(new Font("Segoe UI", Font.ITALIC, 13));
+
+        statusBar.add(lblInfo, BorderLayout.WEST);
+
+        add(statusBar, BorderLayout.SOUTH);
     }
 
     private JComponent buildActionBar() {
-        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
-        JButton btnAdd = new JButton("Thêm mới");
-        JButton btnSave = new JButton("Chỉnh sửa");
-        JButton btnDelete = new JButton("Xóa");
+
+        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        bar.setOpaque(false);
+
+        JButton btnAdd = createBtn("Thêm", "#0d6efd", "➕ ");
+        JButton btnEdit = createBtn("Sửa", "#ffc107", "📝 ");
+        JButton btnDelete = createBtn("Xóa", "#dc3545", "🗑 ");
         JButton btnRefresh = new JButton("Tải lại");
 
+        btnRefresh.setPreferredSize(new Dimension(90, 36));
+        btnRefresh.putClientProperty(FlatClientProperties.STYLE, "arc:10");
+
         btnAdd.addActionListener(e -> onAdd());
-        btnSave.addActionListener(e -> onSave());
+        btnEdit.addActionListener(e -> onSave());
         btnDelete.addActionListener(e -> onDelete());
         btnRefresh.addActionListener(e -> loadTable());
 
-        bar.add(btnAdd);
-        bar.add(btnSave);
-        bar.add(btnDelete);
         bar.add(btnRefresh);
+        bar.add(btnAdd);
+        bar.add(btnEdit);
+        bar.add(btnDelete);
+
         return bar;
     }
 
-    private JComponent buildFormAndTable() {
-        JPanel wrapper = new JPanel(new BorderLayout(8, 8));
-        UI.stylePanelBorder(wrapper, "Danh sách phòng học");
+    private JButton createBtn(String text, String color, String icon) {
 
-        JScrollPane scroll = new JScrollPane(table);
-        UI.styleTable(table);
-        wrapper.add(scroll, BorderLayout.CENTER);
+        JButton btn = new JButton(icon + text);
 
-        return wrapper;
+        btn.setPreferredSize(new Dimension(110, 36));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        String fg = color.equals("#ffc107") ? "#000000" : "#ffffff";
+
+        btn.putClientProperty(FlatClientProperties.STYLE,
+                "background:" + color +
+                        ";foreground:" + fg +
+                        ";arc:10;borderWidth:0");
+
+        return btn;
     }
 
-    private void addField(JPanel form, GridBagConstraints g, int row, int col, String label, JComponent field) {
-        g.gridy = row;
-        g.gridx = col * 2;
-        g.weightx = 0.0;
-        form.add(new JLabel(label), g);
-        g.gridx = col * 2 + 1;
-        g.weightx = 1.0;
-        form.add(field, g);
+    private JComponent buildTableArea() {
+
+        JScrollPane scroll = new JScrollPane(table);
+
+        scroll.putClientProperty(FlatClientProperties.STYLE, "arc:15");
+        scroll.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230)));
+
+        table.setRowHeight(45);
+        table.setShowVerticalLines(false);
+
+        table.getTableHeader().setFont(new Font("Segoe UI Semibold", Font.PLAIN, 14));
+        table.getTableHeader().setPreferredSize(new Dimension(0, 45));
+
+        return scroll;
     }
 
     private void loadTable() {
+
         try {
+
             List<Room> list = roomService.findAll();
+
             tableModel.setData(list);
-            lblInfo.setText("Tổng số: " + list.size() + " phòng.");
-            clearSelection();
+
+            lblInfo.setText("Tổng số: " + list.size() + " phòng học");
+
+            table.clearSelection();
+
+            selectedRoom = null;
+
         } catch (Exception ex) {
-            lblInfo.setText("Lỗi: " + ex.getMessage());
-            JOptionPane.showMessageDialog(this, "Không tải được danh sách: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+
+            JOptionPane.showMessageDialog(this, "Lỗi tải dữ liệu: " + ex.getMessage());
+
         }
     }
 
     private void onTableSelection() {
+
         int row = table.getSelectedRow();
+
         if (row < 0) {
+
             selectedRoom = null;
+
             return;
+
         }
+
         selectedRoom = tableModel.getRoomAt(row);
+
     }
 
     private void onAdd() {
+
         RoomFormDialog dialog = new RoomFormDialog(
                 SwingUtilities.getWindowAncestor(this),
                 null,
                 branchService.findAll()
         );
+
         dialog.setVisible(true);
-        if (!dialog.isSaved()) {
-            return;
+
+        if (dialog.isSaved()) {
+
+            try {
+
+                RoomFormDialog.RoomFormData data = dialog.getResult();
+                Room r = formDataToRoom(data, null);
+                if (r == null) return;
+
+                roomService.create(r);
+
+                loadTable();
+
+            } catch (Exception ex) {
+
+                JOptionPane.showMessageDialog(this, "Lỗi thêm phòng học: " + ex.getMessage());
+
+            }
+
         }
 
-        RoomFormDialog.RoomFormData data = dialog.getResult();
-        Room r = formDataToRoom(data, null);
-        if (r == null) return;
-        try {
-            roomService.create(r);
-            JOptionPane.showMessageDialog(this, "Đã thêm phòng học.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            loadTable();
-            clearForm();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
     }
 
     private void onSave() {
+
         if (selectedRoom == null) {
-            JOptionPane.showMessageDialog(this, "Chọn một phòng để sửa.", "Chưa chọn", JOptionPane.WARNING_MESSAGE);
+
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn phòng học để sửa");
+
             return;
+
         }
+
         RoomFormDialog.RoomFormData existing = roomToFormData(selectedRoom);
+
         RoomFormDialog dialog = new RoomFormDialog(
                 SwingUtilities.getWindowAncestor(this),
                 existing,
                 branchService.findAll()
         );
+
         dialog.setVisible(true);
-        if (!dialog.isSaved()) {
-            return;
+
+        if (dialog.isSaved()) {
+
+            try {
+
+                RoomFormDialog.RoomFormData data = dialog.getResult();
+                Room r = formDataToRoom(data, selectedRoom.getId());
+                if (r == null) return;
+
+                roomService.update(r);
+
+                loadTable();
+
+            } catch (Exception ex) {
+
+                JOptionPane.showMessageDialog(this, "Lỗi cập nhật: " + ex.getMessage());
+
+            }
+
         }
 
-        RoomFormDialog.RoomFormData data = dialog.getResult();
-        Room r = formDataToRoom(data, selectedRoom.getId());
-        if (r == null) return;
-        try {
-            roomService.update(r);
-            JOptionPane.showMessageDialog(this, "Đã cập nhật phòng học.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            loadTable();
-            clearSelection();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+    }
+
+    private void onDelete() {
+
+        if (selectedRoom == null) return;
+
+        int ok = JOptionPane.showConfirmDialog(
+                this,
+                "Xóa phòng học " + selectedRoom.getRoomName() + " ?",
+                "Xác nhận",
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (ok == JOptionPane.YES_OPTION) {
+
+            try {
+
+                roomService.delete(selectedRoom.getId());
+
+                loadTable();
+
+            } catch (Exception ex) {
+
+                JOptionPane.showMessageDialog(this, "Lỗi xóa: " + ex.getMessage());
+
+            }
+
         }
+
     }
 
     private RoomFormDialog.RoomFormData roomToFormData(Room r) {
@@ -172,61 +279,15 @@ public class RoomPanel extends JPanel {
         return data;
     }
 
-    private void onDelete() {
-        if (selectedRoom == null) {
-            JOptionPane.showMessageDialog(this, "Chọn một phòng để xóa.", "Chưa chọn", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        int ok = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa phòng này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
-        if (ok != JOptionPane.YES_OPTION) return;
-        try {
-            roomService.delete(selectedRoom.getId());
-            JOptionPane.showMessageDialog(this, "Đã xóa phòng học.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            loadTable();
-            clearSelection();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private Room formToRoom(Long keepId) {
-        String name = txtRoomName.getText().trim();
-        String capStr = txtCapacity.getText().trim();
-        String location = txtLocation.getText().trim();
-        ActiveStatus status = (ActiveStatus) cboStatus.getSelectedItem();
-        if (name.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Tên phòng không được để trống.", "Lỗi", JOptionPane.WARNING_MESSAGE);
-            return null;
-        }
-        int capacity = 0;
-        if (!capStr.isEmpty()) {
-            try {
-                capacity = Integer.parseInt(capStr.trim());
-            } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(this, "Sức chứa phải là số nguyên dương.", "Lỗi", JOptionPane.WARNING_MESSAGE);
-                return null;
-            }
-        }
-        if (capacity <= 0) {
-            JOptionPane.showMessageDialog(this, "Sức chứa phải lớn hơn 0.", "Lỗi", JOptionPane.WARNING_MESSAGE);
-            return null;
-        }
-        Room r = new Room();
-        if (keepId != null) r.setId(keepId);
-        r.setRoomName(name);
-        r.setCapacity(capacity);
-        r.setLocation(location.isEmpty() ? null : location);
-        r.setStatus(status != null ? status : ActiveStatus.Active);
-        return r;
-    }
-
     private Room formDataToRoom(RoomFormDialog.RoomFormData data, Long keepId) {
         String name = data.getName() != null ? data.getName().trim() : "";
         String capStr = data.getCapacity() != null ? data.getCapacity().trim() : "";
+
         if (name.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Tên phòng không được để trống.", "Lỗi", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Tên phòng học không được để trống.", "Lỗi", JOptionPane.WARNING_MESSAGE);
             return null;
         }
+
         int capacity = 0;
         if (!capStr.isEmpty()) {
             try {
@@ -236,19 +297,21 @@ public class RoomPanel extends JPanel {
                 return null;
             }
         }
+
         if (capacity <= 0) {
             JOptionPane.showMessageDialog(this, "Sức chứa phải lớn hơn 0.", "Lỗi", JOptionPane.WARNING_MESSAGE);
             return null;
         }
+
         Room r = new Room();
         if (keepId != null) r.setId(keepId);
+
         if (data.getBranchId() != null && !data.getBranchId().trim().isEmpty()) {
             try {
                 r.setBranch(branchService.findById(Long.parseLong(data.getBranchId().trim())));
             } catch (Exception ignored) { }
-        } else {
-            r.setBranch(null);
         }
+
         r.setRoomName(name);
         r.setCapacity(capacity);
         r.setLocation(data.getLocation());
@@ -256,54 +319,76 @@ public class RoomPanel extends JPanel {
         return r;
     }
 
-    private void clearForm() {
-        txtRoomName.setText("");
-        txtCapacity.setText("");
-        txtLocation.setText("");
-        cboStatus.setSelectedItem(ActiveStatus.Active);
-        selectedRoom = null;
-    }
-
-    private void clearSelection() {
-        selectedRoom = null;
-        clearForm();
-        table.clearSelection();
-    }
-
     private static class RoomTableModel extends AbstractTableModel {
-        private final String[] columns = {"Tên phòng", "Chi nhánh", "Sức chứa", "Vị trí", "Trạng thái"};
+
+        private final String[] columns = {
+                "Tên phòng",
+                "Chi nhánh",
+                "Sức chứa",
+                "Vị trí",
+                "Trạng thái"
+        };
+
         private List<Room> data = new ArrayList<>();
 
         void setData(List<Room> data) {
+
             this.data = data != null ? data : new ArrayList<>();
+
             fireTableDataChanged();
+
         }
 
-        Room getRoomAt(int row) {
-            if (row < 0 || row >= data.size()) return null;
-            return data.get(row);
+        Room getRoomAt(int r) {
+
+            return (r >= 0 && r < data.size()) ? data.get(r) : null;
+
         }
 
         @Override
-        public int getRowCount() { return data.size(); }
+        public int getRowCount() {
 
-        @Override
-        public int getColumnCount() { return columns.length; }
+            return data.size();
 
-        @Override
-        public String getColumnName(int col) { return columns[col]; }
-
-        @Override
-        public Object getValueAt(int row, int col) {
-            Room r = data.get(row);
-            switch (col) {
-                case 0: return r.getRoomName();
-                case 1: return r.getBranch() != null ? r.getBranch().getBranchName() : "";
-                case 2: return r.getCapacity();
-                case 3: return r.getLocation() != null ? r.getLocation() : "";
-                case 4: return r.getStatus() != null ? r.getStatus().name() : "";
-                default: return "";
-            }
         }
+
+        @Override
+        public int getColumnCount() {
+
+            return columns.length;
+
+        }
+
+        @Override
+        public String getColumnName(int c) {
+
+            return columns[c];
+
+        }
+
+        @Override
+        public Object getValueAt(int r, int c) {
+
+            Room room = data.get(r);
+
+            return switch (c) {
+
+                case 0 -> room.getRoomName();
+
+                case 1 -> room.getBranch() != null ? room.getBranch().getBranchName() : "";
+
+                case 2 -> room.getCapacity();
+
+                case 3 -> room.getLocation() != null ? room.getLocation() : "";
+
+                case 4 -> room.getStatus() != null ? room.getStatus().name() : "";
+
+                default -> "";
+
+            };
+
+        }
+
     }
+
 }

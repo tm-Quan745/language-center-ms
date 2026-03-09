@@ -1,5 +1,6 @@
 package vn.edu.ute.productmgmt.ui;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import vn.edu.ute.productmgmt.model.Certificate;
 import vn.edu.ute.productmgmt.model.Student;
 import vn.edu.ute.productmgmt.model.TeachingClass;
@@ -8,6 +9,7 @@ import vn.edu.ute.productmgmt.service.ClassService;
 import vn.edu.ute.productmgmt.service.StudentService;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.time.LocalDate;
@@ -15,6 +17,9 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Panel quản lý chứng chỉ, chuẩn hóa theo ClassPanel
+ */
 public class CertificatePanel extends JPanel {
 
     private final CertificateService certificateService;
@@ -30,122 +35,252 @@ public class CertificatePanel extends JPanel {
         this.certificateService = certificateService;
         this.studentService = studentService;
         this.classService = classService;
-        setLayout(new BorderLayout(8, 8));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        setLayout(new BorderLayout(20, 20));
+        setOpaque(false);
+        setBorder(new EmptyBorder(10, 10, 10, 10));
+
         buildUI();
+
         table.getSelectionModel().addListSelectionListener(e -> {
             if (e.getValueIsAdjusting()) return;
             onTableSelection();
         });
+
         loadTable();
     }
 
     private void buildUI() {
-        add(buildActionBar(), BorderLayout.NORTH);
+
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+
+        JLabel title = new JLabel("Quản lý Chứng chỉ");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 22));
+
+        header.add(title, BorderLayout.WEST);
+        header.add(buildActionBar(), BorderLayout.EAST);
+
+        add(header, BorderLayout.NORTH);
+
         add(buildTableArea(), BorderLayout.CENTER);
-        add(lblInfo, BorderLayout.SOUTH);
+
+        JPanel statusBar = new JPanel(new BorderLayout());
+        statusBar.setOpaque(false);
+
+        lblInfo.setForeground(Color.GRAY);
+        lblInfo.setFont(new Font("Segoe UI", Font.ITALIC, 13));
+
+        statusBar.add(lblInfo, BorderLayout.WEST);
+
+        add(statusBar, BorderLayout.SOUTH);
     }
 
     private JComponent buildActionBar() {
-        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
-        JButton btnAdd = new JButton("Thêm mới");
-        JButton btnSave = new JButton("Chỉnh sửa");
-        JButton btnDelete = new JButton("Xóa");
+
+        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        bar.setOpaque(false);
+
+        JButton btnAdd = createBtn("Thêm", "#0d6efd", "➕ ");
+        JButton btnEdit = createBtn("Sửa", "#ffc107", "📝 ");
+        JButton btnDelete = createBtn("Xóa", "#dc3545", "🗑 ");
         JButton btnRefresh = new JButton("Tải lại");
+
+        btnRefresh.setPreferredSize(new Dimension(90, 36));
+        btnRefresh.putClientProperty(FlatClientProperties.STYLE, "arc:10");
+
         btnAdd.addActionListener(e -> onAdd());
-        btnSave.addActionListener(e -> onSave());
+        btnEdit.addActionListener(e -> onSave());
         btnDelete.addActionListener(e -> onDelete());
         btnRefresh.addActionListener(e -> loadTable());
-        bar.add(btnAdd);
-        bar.add(btnSave);
-        bar.add(btnDelete);
+
         bar.add(btnRefresh);
+        bar.add(btnAdd);
+        bar.add(btnEdit);
+        bar.add(btnDelete);
+
         return bar;
     }
 
+    private JButton createBtn(String text, String color, String icon) {
+
+        JButton btn = new JButton(icon + text);
+
+        btn.setPreferredSize(new Dimension(110, 36));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        String fg = color.equals("#ffc107") ? "#000000" : "#ffffff";
+
+        btn.putClientProperty(FlatClientProperties.STYLE,
+                "background:" + color +
+                        ";foreground:" + fg +
+                        ";arc:10;borderWidth:0");
+
+        return btn;
+    }
+
     private JComponent buildTableArea() {
-        JPanel wrapper = new JPanel(new BorderLayout(8, 8));
-        UI.stylePanelBorder(wrapper, "Danh sách chứng chỉ");
+
         JScrollPane scroll = new JScrollPane(table);
-        UI.styleTable(table);
-        wrapper.add(scroll, BorderLayout.CENTER);
-        return wrapper;
+
+        scroll.putClientProperty(FlatClientProperties.STYLE, "arc:15");
+        scroll.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230)));
+
+        table.setRowHeight(45);
+        table.setShowVerticalLines(false);
+
+        table.getTableHeader().setFont(new Font("Segoe UI Semibold", Font.PLAIN, 14));
+        table.getTableHeader().setPreferredSize(new Dimension(0, 45));
+
+        return scroll;
     }
 
     private void loadTable() {
+
         try {
+
             List<Certificate> list = certificateService.findAll();
+
             tableModel.setData(list);
-            lblInfo.setText("Tổng số: " + list.size() + " chứng chỉ.");
-            clearSelection();
+
+            lblInfo.setText("Tổng số: " + list.size() + " chứng chỉ");
+
+            table.clearSelection();
+
+            selectedCertificate = null;
+
         } catch (Exception ex) {
-            lblInfo.setText("Lỗi: " + ex.getMessage());
-            JOptionPane.showMessageDialog(this, "Không tải được danh sách: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+
+            JOptionPane.showMessageDialog(this, "Lỗi tải dữ liệu: " + ex.getMessage());
+
         }
     }
 
     private void onTableSelection() {
+
         int row = table.getSelectedRow();
-        selectedCertificate = row < 0 ? null : tableModel.getCertificateAt(row);
+
+        if (row < 0) {
+
+            selectedCertificate = null;
+
+            return;
+
+        }
+
+        selectedCertificate = tableModel.getCertificateAt(row);
+
     }
 
     private void onAdd() {
+
         List<Student> students = studentService.findAll();
         List<TeachingClass> classes = classService.findAll();
-        CertificateFormDialog dialog = new CertificateFormDialog(SwingUtilities.getWindowAncestor(this), null, students, classes);
+
+        CertificateFormDialog dialog = new CertificateFormDialog(
+                SwingUtilities.getWindowAncestor(this),
+                null,
+                students,
+                classes
+        );
+
         dialog.setVisible(true);
-        if (!dialog.isSaved()) return;
-        CertificateFormDialog.CertificateFormData data = dialog.getResult();
-        Certificate c = formDataToCertificate(data, null);
-        if (c == null) return;
-        try {
-            certificateService.create(c);
-            JOptionPane.showMessageDialog(this, "Đã thêm chứng chỉ.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            loadTable();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+
+        if (dialog.isSaved()) {
+
+            try {
+
+                CertificateFormDialog.CertificateFormData data = dialog.getResult();
+                Certificate c = formDataToCertificate(data, null);
+                if (c == null) return;
+
+                certificateService.create(c);
+
+                loadTable();
+
+            } catch (Exception ex) {
+
+                JOptionPane.showMessageDialog(this, "Lỗi thêm chứng chỉ: " + ex.getMessage());
+
+            }
+
         }
+
     }
 
     private void onSave() {
+
         if (selectedCertificate == null) {
-            JOptionPane.showMessageDialog(this, "Chọn một chứng chỉ để sửa.", "Chưa chọn", JOptionPane.WARNING_MESSAGE);
+
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn chứng chỉ để sửa");
+
             return;
+
         }
+
         CertificateFormDialog.CertificateFormData existing = certificateToFormData(selectedCertificate);
+
         List<Student> students = studentService.findAll();
         List<TeachingClass> classes = classService.findAll();
-        CertificateFormDialog dialog = new CertificateFormDialog(SwingUtilities.getWindowAncestor(this), existing, students, classes);
+
+        CertificateFormDialog dialog = new CertificateFormDialog(
+                SwingUtilities.getWindowAncestor(this),
+                existing,
+                students,
+                classes
+        );
+
         dialog.setVisible(true);
-        if (!dialog.isSaved()) return;
-        CertificateFormDialog.CertificateFormData data = dialog.getResult();
-        Certificate c = formDataToCertificate(data, selectedCertificate.getId());
-        if (c == null) return;
-        try {
-            certificateService.update(c);
-            JOptionPane.showMessageDialog(this, "Đã cập nhật chứng chỉ.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            loadTable();
-            clearSelection();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+
+        if (dialog.isSaved()) {
+
+            try {
+
+                CertificateFormDialog.CertificateFormData data = dialog.getResult();
+                Certificate c = formDataToCertificate(data, selectedCertificate.getId());
+                if (c == null) return;
+
+                certificateService.update(c);
+
+                loadTable();
+
+            } catch (Exception ex) {
+
+                JOptionPane.showMessageDialog(this, "Lỗi cập nhật: " + ex.getMessage());
+
+            }
+
         }
+
     }
 
     private void onDelete() {
-        if (selectedCertificate == null) {
-            JOptionPane.showMessageDialog(this, "Chọn một chứng chỉ để xóa.", "Chưa chọn", JOptionPane.WARNING_MESSAGE);
-            return;
+
+        if (selectedCertificate == null) return;
+
+        int ok = JOptionPane.showConfirmDialog(
+                this,
+                "Xóa chứng chỉ này?",
+                "Xác nhận",
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (ok == JOptionPane.YES_OPTION) {
+
+            try {
+
+                certificateService.delete(selectedCertificate.getId());
+
+                loadTable();
+
+            } catch (Exception ex) {
+
+                JOptionPane.showMessageDialog(this, "Lỗi xóa: " + ex.getMessage());
+
+            }
+
         }
-        int ok = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa chứng chỉ này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
-        if (ok != JOptionPane.YES_OPTION) return;
-        try {
-            certificateService.delete(selectedCertificate.getId());
-            JOptionPane.showMessageDialog(this, "Đã xóa chứng chỉ.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            loadTable();
-            clearSelection();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
+
     }
 
     private CertificateFormDialog.CertificateFormData certificateToFormData(Certificate c) {
@@ -216,44 +351,76 @@ public class CertificatePanel extends JPanel {
         }
     }
 
-    private void clearSelection() {
-        selectedCertificate = null;
-        table.clearSelection();
-    }
-
     private static class CertificateTableModel extends AbstractTableModel {
-        private final String[] columns = {"Tên chứng chỉ", "Học viên", "Lớp", "Ngày cấp", "Số seri"};
+
+        private final String[] columns = {
+                "Tên chứng chỉ",
+                "Học viên",
+                "Lớp",
+                "Ngày cấp",
+                "Số seri"
+        };
+
         private List<Certificate> data = new ArrayList<>();
 
         void setData(List<Certificate> data) {
+
             this.data = data != null ? data : new ArrayList<>();
+
             fireTableDataChanged();
+
         }
 
-        Certificate getCertificateAt(int row) {
-            return (row >= 0 && row < data.size()) ? data.get(row) : null;
+        Certificate getCertificateAt(int r) {
+
+            return (r >= 0 && r < data.size()) ? data.get(r) : null;
+
         }
 
         @Override
-        public int getRowCount() { return data.size(); }
+        public int getRowCount() {
+
+            return data.size();
+
+        }
 
         @Override
-        public int getColumnCount() { return columns.length; }
+        public int getColumnCount() {
+
+            return columns.length;
+
+        }
 
         @Override
-        public String getColumnName(int col) { return columns[col]; }
+        public String getColumnName(int c) {
+
+            return columns[c];
+
+        }
 
         @Override
-        public Object getValueAt(int row, int col) {
-            Certificate c = data.get(row);
-            return switch (col) {
-                case 0 -> c.getCertName() != null ? c.getCertName() : "";
-                case 1 -> c.getStudent() != null ? c.getStudent().getFullName() : "";
-                case 2 -> c.getTeachingClass() != null ? c.getTeachingClass().getClassName() : "";
-                case 3 -> c.getIssueDate() != null ? c.getIssueDate().toString() : "";
-                case 4 -> c.getSerialNo() != null ? c.getSerialNo() : "";
+        public Object getValueAt(int r, int c) {
+
+            Certificate cert = data.get(r);
+
+            return switch (c) {
+
+                case 0 -> cert.getCertName() != null ? cert.getCertName() : "";
+
+                case 1 -> cert.getStudent() != null ? cert.getStudent().getFullName() : "";
+
+                case 2 -> cert.getTeachingClass() != null ? cert.getTeachingClass().getClassName() : "";
+
+                case 3 -> cert.getIssueDate() != null ? cert.getIssueDate().toString() : "";
+
+                case 4 -> cert.getSerialNo() != null ? cert.getSerialNo() : "";
+
                 default -> "";
+
             };
+
         }
+
     }
+
 }

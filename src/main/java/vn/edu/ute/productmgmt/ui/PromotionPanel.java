@@ -1,11 +1,13 @@
 package vn.edu.ute.productmgmt.ui;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import vn.edu.ute.productmgmt.model.Promotion;
 import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
 import vn.edu.ute.productmgmt.model.enums.DiscountType;
 import vn.edu.ute.productmgmt.service.PromotionService;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.math.BigDecimal;
@@ -14,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Panel Khuyến mãi: JTable danh sách + CRUD, theo mẫu CoursePanel.
+ * Panel quản lý khuyến mãi, chuẩn hóa theo ClassPanel
  */
 public class PromotionPanel extends JPanel {
 
@@ -27,134 +29,242 @@ public class PromotionPanel extends JPanel {
 
     public PromotionPanel(PromotionService promotionService) {
         this.promotionService = promotionService;
-        setLayout(new BorderLayout(8, 8));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        setLayout(new BorderLayout(20, 20));
+        setOpaque(false);
+        setBorder(new EmptyBorder(10, 10, 10, 10));
+
         buildUI();
+
         table.getSelectionModel().addListSelectionListener(e -> {
             if (e.getValueIsAdjusting()) return;
             onTableSelection();
         });
+
         loadTable();
     }
 
     private void buildUI() {
-        add(buildActionBar(), BorderLayout.NORTH);
+
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+
+        JLabel title = new JLabel("Quản lý Khuyến mãi");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 22));
+
+        header.add(title, BorderLayout.WEST);
+        header.add(buildActionBar(), BorderLayout.EAST);
+
+        add(header, BorderLayout.NORTH);
+
         add(buildTableArea(), BorderLayout.CENTER);
-        add(lblInfo, BorderLayout.SOUTH);
+
+        JPanel statusBar = new JPanel(new BorderLayout());
+        statusBar.setOpaque(false);
+
+        lblInfo.setForeground(Color.GRAY);
+        lblInfo.setFont(new Font("Segoe UI", Font.ITALIC, 13));
+
+        statusBar.add(lblInfo, BorderLayout.WEST);
+
+        add(statusBar, BorderLayout.SOUTH);
     }
 
     private JComponent buildActionBar() {
-        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
-        JButton btnAdd = new JButton("Thêm mới");
-        JButton btnSave = new JButton("Chỉnh sửa");
-        JButton btnDelete = new JButton("Xóa");
+
+        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        bar.setOpaque(false);
+
+        JButton btnAdd = createBtn("Thêm", "#0d6efd", "➕ ");
+        JButton btnEdit = createBtn("Sửa", "#ffc107", "📝 ");
+        JButton btnDelete = createBtn("Xóa", "#dc3545", "🗑 ");
         JButton btnRefresh = new JButton("Tải lại");
 
+        btnRefresh.setPreferredSize(new Dimension(90, 36));
+        btnRefresh.putClientProperty(FlatClientProperties.STYLE, "arc:10");
+
         btnAdd.addActionListener(e -> onAdd());
-        btnSave.addActionListener(e -> onSave());
+        btnEdit.addActionListener(e -> onSave());
         btnDelete.addActionListener(e -> onDelete());
         btnRefresh.addActionListener(e -> loadTable());
 
-        bar.add(btnAdd);
-        bar.add(btnSave);
-        bar.add(btnDelete);
         bar.add(btnRefresh);
+        bar.add(btnAdd);
+        bar.add(btnEdit);
+        bar.add(btnDelete);
+
         return bar;
     }
 
+    private JButton createBtn(String text, String color, String icon) {
+
+        JButton btn = new JButton(icon + text);
+
+        btn.setPreferredSize(new Dimension(110, 36));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        String fg = color.equals("#ffc107") ? "#000000" : "#ffffff";
+
+        btn.putClientProperty(FlatClientProperties.STYLE,
+                "background:" + color +
+                        ";foreground:" + fg +
+                        ";arc:10;borderWidth:0");
+
+        return btn;
+    }
+
     private JComponent buildTableArea() {
-        JPanel wrapper = new JPanel(new BorderLayout(8, 8));
-        UI.stylePanelBorder(wrapper, "Danh sách khuyến mãi");
 
         JScrollPane scroll = new JScrollPane(table);
-        UI.styleTable(table);
-        wrapper.add(scroll, BorderLayout.CENTER);
 
-        return wrapper;
+        scroll.putClientProperty(FlatClientProperties.STYLE, "arc:15");
+        scroll.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230)));
+
+        table.setRowHeight(45);
+        table.setShowVerticalLines(false);
+
+        table.getTableHeader().setFont(new Font("Segoe UI Semibold", Font.PLAIN, 14));
+        table.getTableHeader().setPreferredSize(new Dimension(0, 45));
+
+        return scroll;
     }
 
     private void loadTable() {
+
         try {
+
             List<Promotion> list = promotionService.findAll();
+
             tableModel.setData(list);
-            lblInfo.setText("Tổng số: " + list.size() + " khuyến mãi.");
-            clearSelection();
+
+            lblInfo.setText("Tổng số: " + list.size() + " khuyến mãi");
+
+            table.clearSelection();
+
+            selectedPromotion = null;
+
         } catch (Exception ex) {
-            lblInfo.setText("Lỗi: " + ex.getMessage());
-            JOptionPane.showMessageDialog(this, "Không tải được danh sách: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+
+            JOptionPane.showMessageDialog(this, "Lỗi tải dữ liệu: " + ex.getMessage());
+
         }
     }
 
     private void onTableSelection() {
+
         int row = table.getSelectedRow();
+
         if (row < 0) {
+
             selectedPromotion = null;
+
             return;
+
         }
+
         selectedPromotion = tableModel.getPromotionAt(row);
+
     }
 
     private void onAdd() {
+
         PromotionFormDialog dialog = new PromotionFormDialog(
                 SwingUtilities.getWindowAncestor(this),
                 null
         );
-        dialog.setVisible(true);
-        if (!dialog.isSaved()) return;
 
-        PromotionFormDialog.PromotionFormData data = dialog.getResult();
-        Promotion p = formDataToPromotion(data, null);
-        if (p == null) return;
-        try {
-            promotionService.create(p);
-            JOptionPane.showMessageDialog(this, "Đã thêm khuyến mãi.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            loadTable();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        dialog.setVisible(true);
+
+        if (dialog.isSaved()) {
+
+            try {
+
+                PromotionFormDialog.PromotionFormData data = dialog.getResult();
+                Promotion p = formDataToPromotion(data, null);
+                if (p == null) return;
+
+                promotionService.create(p);
+
+                loadTable();
+
+            } catch (Exception ex) {
+
+                JOptionPane.showMessageDialog(this, "Lỗi thêm khuyến mãi: " + ex.getMessage());
+
+            }
+
         }
+
     }
 
     private void onSave() {
+
         if (selectedPromotion == null) {
-            JOptionPane.showMessageDialog(this, "Chọn một khuyến mãi để sửa.", "Chưa chọn", JOptionPane.WARNING_MESSAGE);
+
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn khuyến mãi để sửa");
+
             return;
+
         }
+
         PromotionFormDialog.PromotionFormData existing = promotionToFormData(selectedPromotion);
+
         PromotionFormDialog dialog = new PromotionFormDialog(
                 SwingUtilities.getWindowAncestor(this),
                 existing
         );
-        dialog.setVisible(true);
-        if (!dialog.isSaved()) return;
 
-        PromotionFormDialog.PromotionFormData data = dialog.getResult();
-        Promotion p = formDataToPromotion(data, selectedPromotion.getId());
-        if (p == null) return;
-        try {
-            promotionService.update(p);
-            JOptionPane.showMessageDialog(this, "Đã cập nhật khuyến mãi.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            loadTable();
-            clearSelection();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        dialog.setVisible(true);
+
+        if (dialog.isSaved()) {
+
+            try {
+
+                PromotionFormDialog.PromotionFormData data = dialog.getResult();
+                Promotion p = formDataToPromotion(data, selectedPromotion.getId());
+                if (p == null) return;
+
+                promotionService.update(p);
+
+                loadTable();
+
+            } catch (Exception ex) {
+
+                JOptionPane.showMessageDialog(this, "Lỗi cập nhật: " + ex.getMessage());
+
+            }
+
         }
+
     }
 
     private void onDelete() {
-        if (selectedPromotion == null) {
-            JOptionPane.showMessageDialog(this, "Chọn một khuyến mãi để xóa.", "Chưa chọn", JOptionPane.WARNING_MESSAGE);
-            return;
+
+        if (selectedPromotion == null) return;
+
+        int ok = JOptionPane.showConfirmDialog(
+                this,
+                "Xóa khuyến mãi?",
+                "Xác nhận",
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (ok == JOptionPane.YES_OPTION) {
+
+            try {
+
+                promotionService.delete(selectedPromotion.getId());
+
+                loadTable();
+
+            } catch (Exception ex) {
+
+                JOptionPane.showMessageDialog(this, "Lỗi xóa: " + ex.getMessage());
+
+            }
+
         }
-        int ok = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa khuyến mãi này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
-        if (ok != JOptionPane.YES_OPTION) return;
-        try {
-            promotionService.delete(selectedPromotion.getId());
-            JOptionPane.showMessageDialog(this, "Đã xóa khuyến mãi.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            loadTable();
-            clearSelection();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
+
     }
 
     private PromotionFormDialog.PromotionFormData promotionToFormData(Promotion p) {
@@ -213,12 +323,8 @@ public class PromotionPanel extends JPanel {
         }
     }
 
-    private void clearSelection() {
-        selectedPromotion = null;
-        table.clearSelection();
-    }
-
     private static class PromotionTableModel extends AbstractTableModel {
+
         private final String[] columns = {
                 "Tên khuyến mãi",
                 "Loại giảm",
@@ -227,39 +333,69 @@ public class PromotionPanel extends JPanel {
                 "Đến ngày",
                 "Trạng thái"
         };
+
         private List<Promotion> data = new ArrayList<>();
 
         void setData(List<Promotion> data) {
+
             this.data = data != null ? data : new ArrayList<>();
+
             fireTableDataChanged();
+
         }
 
-        Promotion getPromotionAt(int row) {
-            if (row < 0 || row >= data.size()) return null;
-            return data.get(row);
+        Promotion getPromotionAt(int r) {
+
+            return (r >= 0 && r < data.size()) ? data.get(r) : null;
+
         }
 
         @Override
-        public int getRowCount() { return data.size(); }
+        public int getRowCount() {
 
-        @Override
-        public int getColumnCount() { return columns.length; }
+            return data.size();
 
-        @Override
-        public String getColumnName(int col) { return columns[col]; }
-
-        @Override
-        public Object getValueAt(int row, int col) {
-            Promotion p = data.get(row);
-            switch (col) {
-                case 0: return p.getPromoName();
-                case 1: return p.getDiscountType() != null ? p.getDiscountType().name() : "";
-                case 2: return p.getDiscountValue() != null ? p.getDiscountValue().toPlainString() : "";
-                case 3: return p.getStartDate() != null ? p.getStartDate().toString() : "";
-                case 4: return p.getEndDate() != null ? p.getEndDate().toString() : "";
-                case 5: return p.getStatus() != null ? p.getStatus().name() : "";
-                default: return "";
-            }
         }
+
+        @Override
+        public int getColumnCount() {
+
+            return columns.length;
+
+        }
+
+        @Override
+        public String getColumnName(int c) {
+
+            return columns[c];
+
+        }
+
+        @Override
+        public Object getValueAt(int r, int c) {
+
+            Promotion p = data.get(r);
+
+            return switch (c) {
+
+                case 0 -> p.getPromoName();
+
+                case 1 -> p.getDiscountType() != null ? p.getDiscountType().name() : "";
+
+                case 2 -> p.getDiscountValue() != null ? p.getDiscountValue().toPlainString() : "";
+
+                case 3 -> p.getStartDate() != null ? p.getStartDate().toString() : "";
+
+                case 4 -> p.getEndDate() != null ? p.getEndDate().toString() : "";
+
+                case 5 -> p.getStatus() != null ? p.getStatus().name() : "";
+
+                default -> "";
+
+            };
+
+        }
+
     }
+
 }

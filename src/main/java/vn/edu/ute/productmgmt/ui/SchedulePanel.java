@@ -1,21 +1,26 @@
 package vn.edu.ute.productmgmt.ui;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import vn.edu.ute.productmgmt.model.Schedule;
 import vn.edu.ute.productmgmt.service.*;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Panel quản lý lịch học, chuẩn hóa theo ClassPanel
+ */
 public class SchedulePanel extends JPanel {
 
     private final ScheduleService scheduleService;
     private final ClassService classService;
     private final RoomService roomService;
 
-    private final JTextField txtSearch = new JTextField(20);
+    private final JTextField txtSearch = new JTextField(18);
     private final JLabel lblInfo = new JLabel(" ");
 
     private final ScheduleTableModel tableModel = new ScheduleTableModel();
@@ -27,8 +32,9 @@ public class SchedulePanel extends JPanel {
         this.classService = classService;
         this.roomService = roomService;
 
-        setLayout(new BorderLayout(8, 8));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setLayout(new BorderLayout(20, 20));
+        setOpaque(false);
+        setBorder(new EmptyBorder(10, 10, 10, 10));
 
         buildUI();
 
@@ -41,146 +47,313 @@ public class SchedulePanel extends JPanel {
     }
 
     private void buildUI() {
-        add(buildActionBar(), BorderLayout.NORTH);
-        add(new JScrollPane(table), BorderLayout.CENTER);
-        add(lblInfo, BorderLayout.SOUTH);
+
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+
+        JLabel title = new JLabel("Quản lý Lịch học");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 22));
+
+        header.add(title, BorderLayout.WEST);
+        header.add(buildActionBar(), BorderLayout.EAST);
+
+        add(header, BorderLayout.NORTH);
+
+        add(buildTableArea(), BorderLayout.CENTER);
+
+        JPanel statusBar = new JPanel(new BorderLayout());
+        statusBar.setOpaque(false);
+
+        lblInfo.setForeground(Color.GRAY);
+        lblInfo.setFont(new Font("Segoe UI", Font.ITALIC, 13));
+
+        statusBar.add(lblInfo, BorderLayout.WEST);
+
+        add(statusBar, BorderLayout.SOUTH);
     }
 
     private JComponent buildActionBar() {
-        JPanel bar = new JPanel(new BorderLayout(8, 4));
 
-        // Bên trái: Tìm kiếm
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
-        left.add(new JLabel("Tìm lịch (Tên lớp):"));
-        left.add(txtSearch);
+        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        bar.setOpaque(false);
+
+        txtSearch.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Tìm lịch học...");
+        txtSearch.setPreferredSize(new Dimension(180, 36));
+
         JButton btnSearch = new JButton("Tìm");
-        btnSearch.addActionListener(e -> onSearch());
-        left.add(btnSearch);
+        btnSearch.setPreferredSize(new Dimension(70, 36));
 
-        // Bên phải: Các thao tác
-        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
-        JButton btnAdd = new JButton("Thêm lịch");
-        JButton btnEdit = new JButton("Sửa");
-        JButton btnDelete = new JButton("Xóa");
+        JButton btnAdd = createBtn("Thêm", "#0d6efd", "➕ ");
+        JButton btnEdit = createBtn("Sửa", "#ffc107", "📝 ");
+        JButton btnDelete = createBtn("Xóa", "#dc3545", "🗑 ");
         JButton btnRefresh = new JButton("Tải lại");
 
+        btnRefresh.setPreferredSize(new Dimension(90, 36));
+        btnRefresh.putClientProperty(FlatClientProperties.STYLE, "arc:10");
+
+        btnSearch.addActionListener(e -> onSearch());
         btnAdd.addActionListener(e -> onAdd());
         btnEdit.addActionListener(e -> onEdit());
         btnDelete.addActionListener(e -> onDelete());
         btnRefresh.addActionListener(e -> loadTableAll());
 
-        right.add(btnAdd);
-        right.add(btnEdit);
-        right.add(btnDelete);
-        right.add(btnRefresh);
+        bar.add(txtSearch);
+        bar.add(btnSearch);
+        bar.add(btnRefresh);
+        bar.add(btnAdd);
+        bar.add(btnEdit);
+        bar.add(btnDelete);
 
-        bar.add(left, BorderLayout.WEST);
-        bar.add(right, BorderLayout.EAST);
         return bar;
     }
 
+    private JButton createBtn(String text, String color, String icon) {
+
+        JButton btn = new JButton(icon + text);
+
+        btn.setPreferredSize(new Dimension(110, 36));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        String fg = color.equals("#ffc107") ? "#000000" : "#ffffff";
+
+        btn.putClientProperty(FlatClientProperties.STYLE,
+                "background:" + color +
+                        ";foreground:" + fg +
+                        ";arc:10;borderWidth:0");
+
+        return btn;
+    }
+
+    private JComponent buildTableArea() {
+
+        JScrollPane scroll = new JScrollPane(table);
+
+        scroll.putClientProperty(FlatClientProperties.STYLE, "arc:15");
+        scroll.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230)));
+
+        table.setRowHeight(45);
+        table.setShowVerticalLines(false);
+
+        table.getTableHeader().setFont(new Font("Segoe UI Semibold", Font.PLAIN, 14));
+        table.getTableHeader().setPreferredSize(new Dimension(0, 45));
+
+        return scroll;
+    }
+
     private void loadTableAll() {
+
         try {
+
             List<Schedule> list = scheduleService.findAll();
+
             tableModel.setData(list);
-            lblInfo.setText("Tổng số: " + list.size() + " mục lịch học.");
+
+            lblInfo.setText("Tổng số: " + list.size() + " lịch học");
+
             table.clearSelection();
+
             selectedSchedule = null;
+
         } catch (Exception ex) {
+
             JOptionPane.showMessageDialog(this, "Lỗi tải dữ liệu: " + ex.getMessage());
+
         }
     }
 
     private void onSearch() {
+
         String kw = txtSearch.getText().trim().toLowerCase();
+
         List<Schedule> all = scheduleService.findAll();
+
         List<Schedule> filtered = all.stream()
                 .filter(s -> s.getTeachingClass().getClassName().toLowerCase().contains(kw))
                 .toList();
+
         tableModel.setData(filtered);
-        lblInfo.setText("Tìm thấy: " + filtered.size() + " kết quả.");
+
+        lblInfo.setText("Tìm thấy: " + filtered.size() + " kết quả");
+
     }
 
     private void onTableSelection() {
+
         int row = table.getSelectedRow();
+
         if (row < 0) {
+
             selectedSchedule = null;
+
             return;
+
         }
+
         selectedSchedule = tableModel.getScheduleAt(row);
+
     }
 
     private void onAdd() {
+
         ScheduleFormDialog dialog = new ScheduleFormDialog(
                 SwingUtilities.getWindowAncestor(this), null,
                 classService, roomService
         );
+
         dialog.setVisible(true);
+
         if (dialog.isSaved()) {
+
             try {
+
                 scheduleService.createSchedule(dialog.getResult());
+
                 loadTableAll();
+
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Lỗi thêm mới: " + ex.getMessage());
+
+                JOptionPane.showMessageDialog(this, "Lỗi thêm lịch học: " + ex.getMessage());
+
             }
+
         }
+
     }
 
     private void onEdit() {
+
         if (selectedSchedule == null) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn lịch để sửa.");
+
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn lịch học để sửa");
+
             return;
+
         }
+
         ScheduleFormDialog dialog = new ScheduleFormDialog(
                 SwingUtilities.getWindowAncestor(this), selectedSchedule,
                 classService, roomService
         );
+
         dialog.setVisible(true);
+
         if (dialog.isSaved()) {
+
             try {
+
                 scheduleService.updateSchedule(dialog.getResult());
+
                 loadTableAll();
+
             } catch (Exception ex) {
+
                 JOptionPane.showMessageDialog(this, "Lỗi cập nhật: " + ex.getMessage());
+
             }
+
         }
+
     }
 
     private void onDelete() {
+
         if (selectedSchedule == null) return;
-        int ok = JOptionPane.showConfirmDialog(this, "Xóa lịch học của lớp " +
-                selectedSchedule.getTeachingClass().getClassName() + "?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+
+        int ok = JOptionPane.showConfirmDialog(
+                this,
+                "Xóa lịch học?",
+                "Xác nhận",
+                JOptionPane.YES_NO_OPTION
+        );
+
         if (ok == JOptionPane.YES_OPTION) {
+
             try {
+
                 scheduleService.deleteSchedule(selectedSchedule.getId());
+
                 loadTableAll();
+
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Lỗi khi xóa: " + ex.getMessage());
+
+                JOptionPane.showMessageDialog(this, "Lỗi xóa: " + ex.getMessage());
+
             }
+
         }
+
     }
 
-    // === Table Model đồng bộ với ClassTableModel ===
     private static class ScheduleTableModel extends AbstractTableModel {
-        private final String[] columns = {"ID", "Lớp học", "Phòng", "Ngày học", "Thời gian"};
+
+        private final String[] columns = {
+                "Mã lịch",
+                "Lớp học",
+                "Phòng",
+                "Ngày học",
+                "Thời gian"
+        };
+
         private List<Schedule> data = new ArrayList<>();
 
-        void setData(List<Schedule> data) { this.data = data; fireTableDataChanged(); }
-        Schedule getScheduleAt(int r) { return data.get(r); }
+        void setData(List<Schedule> data) {
 
-        @Override public int getRowCount() { return data.size(); }
-        @Override public int getColumnCount() { return columns.length; }
-        @Override public String getColumnName(int c) { return columns[c]; }
-        @Override public Object getValueAt(int r, int c) {
-            Schedule s = data.get(r);
-            return switch (c) {
-                case 0 -> s.getId();
-                case 1 -> s.getTeachingClass() != null ? s.getTeachingClass().getClassName() : "";
-                case 2 -> s.getRoom() != null ? s.getRoom().getRoomName() : "N/A";
-                case 3 -> s.getStudyDate();
-                case 4 -> s.getStartTime() + " - " + s.getEndTime();
-                default -> "";
-            };
+            this.data = data != null ? data : new ArrayList<>();
+
+            fireTableDataChanged();
+
         }
+
+        Schedule getScheduleAt(int r) {
+
+            return (r >= 0 && r < data.size()) ? data.get(r) : null;
+
+        }
+
+        @Override
+        public int getRowCount() {
+
+            return data.size();
+
+        }
+
+        @Override
+        public int getColumnCount() {
+
+            return columns.length;
+
+        }
+
+        @Override
+        public String getColumnName(int c) {
+
+            return columns[c];
+
+        }
+
+        @Override
+        public Object getValueAt(int r, int c) {
+
+            Schedule s = data.get(r);
+
+            return switch (c) {
+
+                case 0 -> s.getId();
+
+                case 1 -> s.getTeachingClass() != null ? s.getTeachingClass().getClassName() : "";
+
+                case 2 -> s.getRoom() != null ? s.getRoom().getRoomName() : "";
+
+                case 3 -> s.getStudyDate();
+
+                case 4 -> s.getStartTime() + " - " + s.getEndTime();
+
+                default -> "";
+
+            };
+
+        }
+
     }
+
 }
