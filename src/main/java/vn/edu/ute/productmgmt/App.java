@@ -1,8 +1,12 @@
 package vn.edu.ute.productmgmt;
 
 import vn.edu.ute.productmgmt.db.TransactionManager;
+import vn.edu.ute.productmgmt.repo.AttendanceRepository;
 import vn.edu.ute.productmgmt.repo.BranchRepository;
 import vn.edu.ute.productmgmt.repo.CertificateRepository;
+import vn.edu.ute.productmgmt.repo.ClassRepository;
+import vn.edu.ute.productmgmt.repo.ResultRepository;
+import vn.edu.ute.productmgmt.repo.ScheduleRepository;
 import vn.edu.ute.productmgmt.repo.CategoryRepository;
 import vn.edu.ute.productmgmt.repo.CourseRepository;
 import vn.edu.ute.productmgmt.repo.EnrollmentRepository;
@@ -17,8 +21,12 @@ import vn.edu.ute.productmgmt.repo.StudentRepository;
 import vn.edu.ute.productmgmt.repo.TeacherRepository;
 import vn.edu.ute.productmgmt.repo.StaffRepository;
 import vn.edu.ute.productmgmt.repo.UserAccountRepository;
+import vn.edu.ute.productmgmt.repo.jpa.JpaAttendanceRepository;
 import vn.edu.ute.productmgmt.repo.jpa.JpaBranchRepository;
 import vn.edu.ute.productmgmt.repo.jpa.JpaCertificateRepository;
+import vn.edu.ute.productmgmt.repo.jpa.JpaClassRepository;
+import vn.edu.ute.productmgmt.repo.jpa.JpaResultRepository;
+import vn.edu.ute.productmgmt.repo.jpa.JpaScheduleRepository;
 import vn.edu.ute.productmgmt.repo.jpa.JpaCategoryRepository;
 import vn.edu.ute.productmgmt.repo.jpa.JpaCourseRepository;
 import vn.edu.ute.productmgmt.repo.jpa.JpaEnrollmentRepository;
@@ -33,8 +41,12 @@ import vn.edu.ute.productmgmt.repo.jpa.JpaStudentRepository;
 import vn.edu.ute.productmgmt.repo.jpa.JpaTeacherRepository;
 import vn.edu.ute.productmgmt.repo.jpa.JpaStaffRepository;
 import vn.edu.ute.productmgmt.repo.jpa.UserAccountRepositoryImpl;
+import vn.edu.ute.productmgmt.service.AttendanceService;
 import vn.edu.ute.productmgmt.service.AuthService;
 import vn.edu.ute.productmgmt.service.BranchService;
+import vn.edu.ute.productmgmt.service.ClassService;
+import vn.edu.ute.productmgmt.service.ResultService;
+import vn.edu.ute.productmgmt.service.ScheduleService;
 import vn.edu.ute.productmgmt.service.CertificateService;
 import vn.edu.ute.productmgmt.service.CategoryService;
 import vn.edu.ute.productmgmt.service.CourseService;
@@ -66,15 +78,25 @@ public class App {
        RoomRepository roomRepo = new JpaRoomRepository();
        BranchRepository branchRepo = new JpaBranchRepository();
        CertificateRepository certificateRepo = new JpaCertificateRepository();
+       ClassRepository classRepo = new JpaClassRepository();
+       ScheduleRepository scheduleRepo = new JpaScheduleRepository();
+       AttendanceRepository attendanceRepo = new JpaAttendanceRepository();
+       ResultRepository resultRepo = new JpaResultRepository();
+       EnrollmentRepository enrollmentRepo = new JpaEnrollmentRepository();
+
        CourseService courseService = new CourseService(courseRepo, tx);
        RoomService roomService = new RoomService(roomRepo, tx);
        BranchService branchService = new BranchService(branchRepo, tx);
        CertificateService certificateService = new CertificateService(certificateRepo, tx);
+       ClassService classService = new ClassService(classRepo, tx);
+       ScheduleService scheduleService = new ScheduleService(scheduleRepo, tx);
+       EnrollmentService enrollmentService = new EnrollmentService(enrollmentRepo, tx);
+       AttendanceService attendanceService = new AttendanceService(attendanceRepo, enrollmentRepo, tx);
+       ResultService resultService = new ResultService(resultRepo, tx);
 
        StudentRepository studentRepo = new JpaStudentRepository();
        TeacherRepository teacherRepo = new JpaTeacherRepository();
        StaffRepository staffRepo = new JpaStaffRepository();
-       EnrollmentRepository enrollmentRepo = new JpaEnrollmentRepository();
        PaymentRepository paymentRepo = new JpaPaymentRepository();
        PromotionRepository promotionRepo = new JpaPromotionRepository();
        InvoiceRepository invoiceRepo = new JpaInvoiceRepository();
@@ -84,7 +106,6 @@ public class App {
        StudentService studentService = new StudentService(studentRepo, tx);
        TeacherService teacherService = new TeacherService(teacherRepo, tx);
        StaffService staffService = new StaffService(staffRepo, tx);
-       EnrollmentService enrollmentService = new EnrollmentService(enrollmentRepo, tx);
        PaymentService paymentService = new PaymentService(paymentRepo, tx);
        PromotionService promotionService = new PromotionService(promotionRepo, tx);
        InvoiceService invoiceService = new InvoiceService(invoiceRepo, promotionService, tx);
@@ -105,7 +126,11 @@ public class App {
                promotionService,
                invoiceService,
                placementTestService,
-               notificationService
+               notificationService,
+               classService,
+               scheduleService,
+               attendanceService,
+               resultService
        ).setVisible(true));
    }
 }

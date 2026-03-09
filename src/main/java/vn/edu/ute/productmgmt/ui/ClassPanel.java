@@ -1,6 +1,5 @@
 package vn.edu.ute.productmgmt.ui;
 
-import vn.edu.ute.productmgmt.config.AppContext;
 import vn.edu.ute.productmgmt.model.*;
 import vn.edu.ute.productmgmt.model.enums.ClassStatus;
 import vn.edu.ute.productmgmt.service.*;
@@ -73,12 +72,16 @@ public class ClassPanel extends JPanel {
     private static final Font FONT_STATUS  = new Font("Segoe UI", Font.PLAIN, 12);
 
     // ─────────────────────────────────────────────────────────────────────────
-    public ClassPanel() {
-        this.classService   = AppContext.classService;
-        this.courseService  = AppContext.courseService;
-        this.teacherService = AppContext.teacherService;
-        this.roomService    = AppContext.roomService;
-        this.branchService  = AppContext.branchService;
+    public ClassPanel(ClassService classService,
+                      CourseService courseService,
+                      TeacherService teacherService,
+                      RoomService roomService,
+                      BranchService branchService) {
+        this.classService   = classService;
+        this.courseService  = courseService;
+        this.teacherService = teacherService;
+        this.roomService    = roomService;
+        this.branchService  = branchService;
 
         initUI();
         loadComboData();

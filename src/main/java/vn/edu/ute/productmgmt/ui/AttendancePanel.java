@@ -1,6 +1,5 @@
 package vn.edu.ute.productmgmt.ui;
 
-import vn.edu.ute.productmgmt.config.AppContext;
 import vn.edu.ute.productmgmt.model.Attendance;
 import vn.edu.ute.productmgmt.model.Student;
 import vn.edu.ute.productmgmt.model.TeachingClass;
@@ -29,10 +28,9 @@ public class AttendancePanel extends JPanel {
 
     private List<Student> students = new ArrayList<>();
 
-    public AttendancePanel() {
-
-        this.attendanceService = AppContext.attendanceService;
-        this.classService = AppContext.classService;
+    public AttendancePanel(AttendanceService attendanceService, ClassService classService) {
+        this.attendanceService = attendanceService;
+        this.classService = classService;
 
         initUI();
         loadClasses();

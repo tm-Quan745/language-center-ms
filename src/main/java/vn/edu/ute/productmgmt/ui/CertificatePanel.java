@@ -1,10 +1,10 @@
 package vn.edu.ute.productmgmt.ui;
 
-import vn.edu.ute.productmgmt.config.AppContext;
 import vn.edu.ute.productmgmt.model.Certificate;
 import vn.edu.ute.productmgmt.model.Student;
 import vn.edu.ute.productmgmt.model.TeachingClass;
 import vn.edu.ute.productmgmt.service.CertificateService;
+import vn.edu.ute.productmgmt.service.ClassService;
 import vn.edu.ute.productmgmt.service.StudentService;
 
 import javax.swing.*;
@@ -19,15 +19,17 @@ public class CertificatePanel extends JPanel {
 
     private final CertificateService certificateService;
     private final StudentService studentService;
+    private final ClassService classService;
 
     private final JLabel lblInfo = new JLabel(" ");
     private final CertificateTableModel tableModel = new CertificateTableModel();
     private final JTable table = new JTable(tableModel);
     private Certificate selectedCertificate;
 
-    public CertificatePanel(CertificateService certificateService, StudentService studentService) {
+    public CertificatePanel(CertificateService certificateService, StudentService studentService, ClassService classService) {
         this.certificateService = certificateService;
         this.studentService = studentService;
+        this.classService = classService;
         setLayout(new BorderLayout(8, 8));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         buildUI();
@@ -89,7 +91,7 @@ public class CertificatePanel extends JPanel {
 
     private void onAdd() {
         List<Student> students = studentService.findAll();
-        List<TeachingClass> classes = AppContext.classService.findAll();
+        List<TeachingClass> classes = classService.findAll();
         CertificateFormDialog dialog = new CertificateFormDialog(SwingUtilities.getWindowAncestor(this), null, students, classes);
         dialog.setVisible(true);
         if (!dialog.isSaved()) return;
@@ -112,7 +114,7 @@ public class CertificatePanel extends JPanel {
         }
         CertificateFormDialog.CertificateFormData existing = certificateToFormData(selectedCertificate);
         List<Student> students = studentService.findAll();
-        List<TeachingClass> classes = AppContext.classService.findAll();
+        List<TeachingClass> classes = classService.findAll();
         CertificateFormDialog dialog = new CertificateFormDialog(SwingUtilities.getWindowAncestor(this), existing, students, classes);
         dialog.setVisible(true);
         if (!dialog.isSaved()) return;
@@ -191,7 +193,7 @@ public class CertificatePanel extends JPanel {
         if (!classIdStr.isEmpty()) {
             try {
                 Long classId = Long.parseLong(classIdStr);
-                for (TeachingClass tc : AppContext.classService.findAll()) {
+                for (TeachingClass tc : classService.findAll()) {
                     if (tc.getId() != null && tc.getId().equals(classId)) {
                         cert.setTeachingClass(tc);
                         break;

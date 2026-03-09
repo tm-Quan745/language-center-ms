@@ -15,6 +15,10 @@ import vn.edu.ute.productmgmt.service.PaymentService;
 import vn.edu.ute.productmgmt.service.PlacementTestService;
 import vn.edu.ute.productmgmt.service.PromotionService;
 import vn.edu.ute.productmgmt.service.NotificationService;
+import vn.edu.ute.productmgmt.service.ClassService;
+import vn.edu.ute.productmgmt.service.ScheduleService;
+import vn.edu.ute.productmgmt.service.AttendanceService;
+import vn.edu.ute.productmgmt.service.ResultService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -42,6 +46,10 @@ public class LcmsLoginFrame extends JFrame {
     private final InvoiceService invoiceService;
     private final PlacementTestService placementTestService;
     private final NotificationService notificationService;
+    private final ClassService classService;
+    private final ScheduleService scheduleService;
+    private final AttendanceService attendanceService;
+    private final ResultService resultService;
 
     public LcmsLoginFrame(AuthService authService,
                           CourseService courseService,
@@ -56,7 +64,11 @@ public class LcmsLoginFrame extends JFrame {
                           PromotionService promotionService,
                           InvoiceService invoiceService,
                           PlacementTestService placementTestService,
-                          NotificationService notificationService) {
+                          NotificationService notificationService,
+                          ClassService classService,
+                          ScheduleService scheduleService,
+                          AttendanceService attendanceService,
+                          ResultService resultService) {
         this.authService = authService;
         this.courseService = courseService;
         this.roomService = roomService;
@@ -71,6 +83,10 @@ public class LcmsLoginFrame extends JFrame {
         this.invoiceService = invoiceService;
         this.placementTestService = placementTestService;
         this.notificationService = notificationService;
+        this.classService = classService;
+        this.scheduleService = scheduleService;
+        this.attendanceService = attendanceService;
+        this.resultService = resultService;
 
         setTitle("LCMS - Login");
         setSize(400, 300);
@@ -190,7 +206,11 @@ public class LcmsLoginFrame extends JFrame {
                         promotionService,
                         invoiceService,
                         placementTestService,
-                        notificationService
+                        notificationService,
+                        classService,
+                        scheduleService,
+                        attendanceService,
+                        resultService
                 );
                 mainFrame.setVisible(true);
 

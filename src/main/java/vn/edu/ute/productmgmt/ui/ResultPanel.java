@@ -1,6 +1,5 @@
 package vn.edu.ute.productmgmt.ui;
 
-import vn.edu.ute.productmgmt.config.AppContext;
 import vn.edu.ute.productmgmt.model.Result;
 import vn.edu.ute.productmgmt.model.Student;
 import vn.edu.ute.productmgmt.model.TeachingClass;
@@ -34,11 +33,12 @@ public class ResultPanel extends JPanel {
     /** Map studentId -> Result (khi load có kết quả sẵn) */
     private Map<Long, Result> existingResultsByStudent = Map.of();
 
-    public ResultPanel() {
-
-        this.resultService = AppContext.resultService;
-        this.classService = AppContext.classService;
-        this.attendanceService = AppContext.attendanceService;
+    public ResultPanel(ResultService resultService,
+                       ClassService classService,
+                       AttendanceService attendanceService) {
+        this.resultService = resultService;
+        this.classService = classService;
+        this.attendanceService = attendanceService;
 
         initUI();
         loadClasses();

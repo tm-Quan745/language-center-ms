@@ -1,6 +1,5 @@
 package vn.edu.ute.productmgmt.ui;
 
-import vn.edu.ute.productmgmt.config.AppContext;
 import vn.edu.ute.productmgmt.model.*;
 import vn.edu.ute.productmgmt.service.*;
 
@@ -66,10 +65,12 @@ public class SchedulePanel extends JPanel {
     private static final Font FONT_STATUS  = new Font("Segoe UI", Font.PLAIN, 12);
 
     // ─────────────────────────────────────────────────────────────────────────
-    public SchedulePanel() {
-        this.classService    = AppContext.classService;
-        this.scheduleService = AppContext.scheduleService;
-        this.roomService     = AppContext.roomService;
+    public SchedulePanel(ClassService classService,
+                         ScheduleService scheduleService,
+                         RoomService roomService) {
+        this.classService    = classService;
+        this.scheduleService = scheduleService;
+        this.roomService     = roomService;
 
         initUI();
         loadComboData();

@@ -19,11 +19,19 @@ import vn.edu.ute.productmgmt.service.PaymentService;
 import vn.edu.ute.productmgmt.service.PlacementTestService;
 import vn.edu.ute.productmgmt.service.PromotionService;
 import vn.edu.ute.productmgmt.service.NotificationService;
+import vn.edu.ute.productmgmt.service.ClassService;
+import vn.edu.ute.productmgmt.service.ScheduleService;
+import vn.edu.ute.productmgmt.service.AttendanceService;
+import vn.edu.ute.productmgmt.service.ResultService;
 
 import vn.edu.ute.productmgmt.model.Notification;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreePath;
+import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
 import java.awt.Dialog.ModalityType;
 import java.awt.event.WindowAdapter;
@@ -48,6 +56,10 @@ public class LcmsMainFrame extends JFrame {
     private final InvoiceService invoiceService;
     private final PlacementTestService placementTestService;
     private final NotificationService notificationService;
+    private final ClassService classService;
+    private final ScheduleService scheduleService;
+    private final AttendanceService attendanceService;
+    private final ResultService resultService;
 
     private final StudentPanel studentPanel;
     private final TeacherPanel teacherPanel;
@@ -57,20 +69,18 @@ public class LcmsMainFrame extends JFrame {
     private final CertificatePanel certificatePanel;
     private final LcmsStaffPanel staffPanel;
     private final EnrollmentPanel enrollmentPanel;
-    private final ClassPanel classPanel = new ClassPanel();
-    private final SchedulePanel schedulePanel = new SchedulePanel();
+    private final ClassPanel classPanel;
+    private final SchedulePanel schedulePanel;
     private final PaymentPanel paymentPanel;
     private final PromotionPanel promotionPanel;
     private final InvoicePanel invoicePanel;
     private final PlacementPanel placementPanel;
     private final NotificationPanel notificationPanel;
-    private final AttendancePanel attendancePanel = new AttendancePanel();
-    private final ResultPanel resultpanel = new ResultPanel();
+    private final AttendancePanel attendancePanel;
+    private final ResultPanel resultpanel;
 
     private final JPanel contentPanel = new JPanel(new CardLayout());
-    private JList<String> menuList;
-
-    private final List<String> menuItems = new ArrayList<>();
+    private JTree menuTree;
     /** Danh sách thông báo theo role, tự tải khi đăng nhập. */
     private List<Notification> cachedNotifications = new ArrayList<>();
 
@@ -87,7 +97,11 @@ public class LcmsMainFrame extends JFrame {
                          PromotionService promotionService,
                          InvoiceService invoiceService,
                          PlacementTestService placementTestService,
-                         NotificationService notificationService) {
+                         NotificationService notificationService,
+                         ClassService classService,
+                         ScheduleService scheduleService,
+                         AttendanceService attendanceService,
+                         ResultService resultService) {
         super("Language Center Management");
         this.currentUser = user;
         this.courseService = courseService;
@@ -103,12 +117,16 @@ public class LcmsMainFrame extends JFrame {
         this.invoiceService = invoiceService;
         this.placementTestService = placementTestService;
         this.notificationService = notificationService;
+        this.classService = classService;
+        this.scheduleService = scheduleService;
+        this.attendanceService = attendanceService;
+        this.resultService = resultService;
         this.studentPanel = new StudentPanel(studentService);
         this.teacherPanel = new TeacherPanel(teacherService);
         this.coursePanel = new CoursePanel(courseService);
         this.roomPanel = new RoomPanel(roomService, branchService);
         this.branchPanel = new BranchPanel(branchService);
-        this.certificatePanel = new CertificatePanel(certificateService, studentService);
+        this.certificatePanel = new CertificatePanel(certificateService, studentService, classService);
         this.staffPanel = new LcmsStaffPanel(staffService);
         this.enrollmentPanel = new EnrollmentPanel(enrollmentService);
         this.paymentPanel = new PaymentPanel(paymentService, studentService, enrollmentService, invoiceService);
@@ -116,6 +134,10 @@ public class LcmsMainFrame extends JFrame {
         this.invoicePanel = new InvoicePanel(invoiceService, studentService, promotionService);
         this.placementPanel = new PlacementPanel(placementTestService, studentService);
         this.notificationPanel = new NotificationPanel(notificationService);
+        this.classPanel = new ClassPanel(classService, courseService, teacherService, roomService, branchService);
+        this.schedulePanel = new SchedulePanel(classService, scheduleService, roomService);
+        this.attendancePanel = new AttendancePanel(attendanceService, classService);
+        this.resultpanel = new ResultPanel(resultService, classService, attendanceService);
 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         buildUI();
@@ -231,49 +253,120 @@ public class LcmsMainFrame extends JFrame {
     }
 
     // ===== MAIN AREA =====
+    /** Card key dùng trong contentPanel — phải khớp với key khi add panel. */
+    private static final String CARD_STUDENT = "Học viên";
+    private static final String CARD_TEACHER = "Giáo viên";
+    private static final String CARD_STAFF = "Nhân viên";
+    private static final String CARD_BRANCH = "Chi nhánh";
+    private static final String CARD_ROOM = "Phòng học";
+    private static final String CARD_COURSE = "Khóa học";
+    private static final String CARD_CLASS = "Lớp học";
+    private static final String CARD_SCHEDULE = "Lịch học";
+    private static final String CARD_ENROLLMENT = "Ghi danh";
+    private static final String CARD_PLACEMENT = "Kiểm tra xếp lớp";
+    private static final String CARD_ATTENDANCE = "Điểm danh";
+    private static final String CARD_RESULT = "Kết quả học tập";
+    private static final String CARD_CERTIFICATE = "Chứng chỉ";
+    private static final String CARD_INVOICE = "Hóa đơn";
+    private static final String CARD_PAYMENT = "Thanh toán";
+    private static final String CARD_PROMOTION = "Khuyến mãi";
+    private static final String CARD_NOTIFICATION = "Thông báo";
+
     private JComponent createMainArea() {
         JPanel main = new JPanel(new BorderLayout());
 
-        menuList = new JList<>();
-        menuList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-        menuList.addListSelectionListener(e -> {
-            if (e.getValueIsAdjusting()) return;
-            String value = menuList.getSelectedValue();
-            if (value != null) {
-                CardLayout cl = (CardLayout) contentPanel.getLayout();
-                cl.show(contentPanel, value);
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("Menu", true);
+        menuTree = new JTree(root);
+        menuTree.setRootVisible(false);
+        menuTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+        menuTree.addTreeSelectionListener(e -> {
+            TreePath path = e.getNewLeadSelectionPath();
+            if (path == null) return;
+            Object last = path.getLastPathComponent();
+            if (last instanceof DefaultMutableTreeNode node) {
+                Object userObj = node.getUserObject();
+                if (userObj != null && node.isLeaf()) {
+                    CardLayout cl = (CardLayout) contentPanel.getLayout();
+                    cl.show(contentPanel, userObj.toString());
+                }
             }
         });
 
-        JScrollPane menuScroll = new JScrollPane(menuList);
-        menuScroll.setPreferredSize(new Dimension(200, 0));
+        JScrollPane menuScroll = new JScrollPane(menuTree);
+        menuScroll.setPreferredSize(new Dimension(220, 0));
 
         main.add(menuScroll, BorderLayout.WEST);
 
-        // Add tất cả card (phân quyền sẽ quyết định hiển thị)
-        contentPanel.add(studentPanel, "Học viên");
-        contentPanel.add(teacherPanel, "Giáo viên");
-        contentPanel.add(coursePanel, "Khóa học");
-        contentPanel.add(roomPanel, "Phòng học");
-        contentPanel.add(branchPanel, "Chi nhánh");
-        contentPanel.add(certificatePanel, "Chứng chỉ");
-        contentPanel.add(staffPanel, "Nhân viên");
-        contentPanel.add(classPanel, "Lớp học");
-        contentPanel.add(schedulePanel, "Lịch học");
-        contentPanel.add(enrollmentPanel, "Ghi danh");
-        contentPanel.add(paymentPanel, "Thanh toán");
-        contentPanel.add(promotionPanel, "Khuyến mãi");
-        contentPanel.add(invoicePanel, "Hóa đơn");
-        contentPanel.add(placementPanel, "Kiểm tra xếp lớp");
-        contentPanel.add(notificationPanel, "Thông báo");
-        contentPanel.add(attendancePanel, "Điểm danh");
-        contentPanel.add(resultpanel, "Kết quả học tập");
-
+        // Add tất cả card
+        contentPanel.add(studentPanel, CARD_STUDENT);
+        contentPanel.add(teacherPanel, CARD_TEACHER);
+        contentPanel.add(coursePanel, CARD_COURSE);
+        contentPanel.add(roomPanel, CARD_ROOM);
+        contentPanel.add(branchPanel, CARD_BRANCH);
+        contentPanel.add(certificatePanel, CARD_CERTIFICATE);
+        contentPanel.add(staffPanel, CARD_STAFF);
+        contentPanel.add(classPanel, CARD_CLASS);
+        contentPanel.add(schedulePanel, CARD_SCHEDULE);
+        contentPanel.add(enrollmentPanel, CARD_ENROLLMENT);
+        contentPanel.add(paymentPanel, CARD_PAYMENT);
+        contentPanel.add(promotionPanel, CARD_PROMOTION);
+        contentPanel.add(invoicePanel, CARD_INVOICE);
+        contentPanel.add(placementPanel, CARD_PLACEMENT);
+        contentPanel.add(notificationPanel, CARD_NOTIFICATION);
+        contentPanel.add(attendancePanel, CARD_ATTENDANCE);
+        contentPanel.add(resultpanel, CARD_RESULT);
 
         main.add(contentPanel, BorderLayout.CENTER);
 
         return main;
+    }
+
+    /** Xây cây menu theo nhóm chức năng, chỉ thêm các mục user được phép xem. */
+    private DefaultMutableTreeNode buildMenuTree() {
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("Menu", true);
+
+        // Con người
+        DefaultMutableTreeNode groupPeople = new DefaultMutableTreeNode("Con người", true);
+        groupPeople.add(new DefaultMutableTreeNode(CARD_STUDENT));
+        if (currentUser.getRole() == UserRole.Admin) {
+            groupPeople.add(new DefaultMutableTreeNode(CARD_TEACHER));
+            groupPeople.add(new DefaultMutableTreeNode(CARD_STAFF));
+        }
+        if (groupPeople.getChildCount() > 0) root.add(groupPeople);
+
+        // Cơ sở
+        DefaultMutableTreeNode groupFacility = new DefaultMutableTreeNode("Cơ sở", true);
+        groupFacility.add(new DefaultMutableTreeNode(CARD_BRANCH));
+        groupFacility.add(new DefaultMutableTreeNode(CARD_ROOM));
+        root.add(groupFacility);
+
+        // Học vụ
+        DefaultMutableTreeNode groupAcademic = new DefaultMutableTreeNode("Học vụ", true);
+        groupAcademic.add(new DefaultMutableTreeNode(CARD_COURSE));
+        groupAcademic.add(new DefaultMutableTreeNode(CARD_CLASS));
+        groupAcademic.add(new DefaultMutableTreeNode(CARD_SCHEDULE));
+        groupAcademic.add(new DefaultMutableTreeNode(CARD_ENROLLMENT));
+        groupAcademic.add(new DefaultMutableTreeNode(CARD_PLACEMENT));
+        if (currentUser.getRole() == UserRole.Admin) {
+            groupAcademic.add(new DefaultMutableTreeNode(CARD_ATTENDANCE));
+            groupAcademic.add(new DefaultMutableTreeNode(CARD_RESULT));
+        }
+        groupAcademic.add(new DefaultMutableTreeNode(CARD_CERTIFICATE));
+        root.add(groupAcademic);
+
+        // Tài chính
+        DefaultMutableTreeNode groupFinance = new DefaultMutableTreeNode("Tài chính", true);
+        groupFinance.add(new DefaultMutableTreeNode(CARD_INVOICE));
+        groupFinance.add(new DefaultMutableTreeNode(CARD_PAYMENT));
+        groupFinance.add(new DefaultMutableTreeNode(CARD_PROMOTION));
+        root.add(groupFinance);
+
+        // Hệ thống
+        DefaultMutableTreeNode groupSystem = new DefaultMutableTreeNode("Hệ thống", true);
+        groupSystem.add(new DefaultMutableTreeNode(CARD_NOTIFICATION));
+        root.add(groupSystem);
+
+        return root;
     }
 
     // ===== MENU BAR =====
@@ -305,7 +398,11 @@ public class LcmsMainFrame extends JFrame {
                     promotionService,
                     invoiceService,
                     placementTestService,
-                    notificationService
+                    notificationService,
+                    classService,
+                    scheduleService,
+                    attendanceService,
+                    resultService
             ).setVisible(true);
         });
 
@@ -323,58 +420,23 @@ public class LcmsMainFrame extends JFrame {
 
     // ===== PHÂN QUYỀN =====
     private void applyAuthorization() {
-
-        UserRole role = currentUser.getRole();
-
-        menuItems.clear();
-
-        // ADMIN: thấy tất cả
-        if (role == UserRole.Admin) {
-
-            addAllMenus();
-
+        DefaultMutableTreeNode root = buildMenuTree();
+        menuTree.setModel(new DefaultTreeModel(root));
+        for (int i = 0; i < menuTree.getRowCount(); i++) {
+            menuTree.expandRow(i);
         }
-        // STAFF: hạn chế
-        else if (role == UserRole.Staff) {
-
-            menuItems.add("Học viên");
-            menuItems.add("Khóa học");
-            menuItems.add("Chứng chỉ");
-            menuItems.add("Phòng học");
-            menuItems.add("Chi nhánh");
-            menuItems.add("Lớp học");
-            menuItems.add("Lịch học");
-            menuItems.add("Ghi danh");
-            menuItems.add("Thanh toán");
-            menuItems.add("Khuyến mãi");
-            menuItems.add("Hóa đơn");
-            menuItems.add("Kiểm tra xếp lớp");
-            menuItems.add("Thông báo");
-        }
-
-        menuList.setListData(menuItems.toArray(new String[0]));
-        if (!menuItems.isEmpty()) {
-            menuList.setSelectedIndex(0);
-        }
+        // Chọn mục đầu tiên là leaf (card) để hiển thị nội dung
+        selectFirstLeaf(root);
     }
 
-    private void addAllMenus() {
-        menuItems.add("Học viên");
-        menuItems.add("Giáo viên");
-        menuItems.add("Khóa học");
-        menuItems.add("Phòng học");
-        menuItems.add("Chi nhánh");
-        menuItems.add("Chứng chỉ");
-        menuItems.add("Lớp học");
-        menuItems.add("Lịch học");
-        menuItems.add("Nhân viên");
-        menuItems.add("Ghi danh");
-        menuItems.add("Thanh toán");
-        menuItems.add("Khuyến mãi");
-        menuItems.add("Hóa đơn");
-        menuItems.add("Kiểm tra xếp lớp");
-        menuItems.add("Thông báo");
-        menuItems.add("Điểm danh");
-        menuItems.add("Kết quả học tập");
+    private void selectFirstLeaf(DefaultMutableTreeNode node) {
+        if (node.isLeaf()) {
+            menuTree.setSelectionPath(new TreePath(node.getPath()));
+            return;
+        }
+        for (int i = 0; i < node.getChildCount(); i++) {
+            selectFirstLeaf((DefaultMutableTreeNode) node.getChildAt(i));
+            if (menuTree.getSelectionPath() != null) return;
+        }
     }
 }
