@@ -3,6 +3,8 @@ package vn.edu.ute.productmgmt.ui;
 import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
 import vn.edu.ute.productmgmt.model.enums.Gender;
 
+import java.util.Calendar;
+import java.util.Date;
 import javax.swing.*;
 import java.awt.*;
 
@@ -11,32 +13,58 @@ import java.awt.*;
  */
 public class StudentFormDialog extends JDialog {
 
+    private final JSpinner spinnerDob;
     private final JTextField txtFullName = new JTextField(25);
-    private final JTextField txtDob = new JTextField(10);
     private final JComboBox<Gender> cboGender = new JComboBox<>(Gender.values());
     private final JTextField txtPhone = new JTextField(15);
     private final JTextField txtEmail = new JTextField(25);
     private final JTextField txtAddress = new JTextField(25);
     private final JComboBox<ActiveStatus> cboStatus = new JComboBox<>(ActiveStatus.values());
-
     private boolean saved = false;
-    private StudentFormData result;
+    private final StudentFormData result;
 
     public StudentFormDialog(Window owner, StudentFormData existing) {
-        super(owner, "Student", ModalityType.APPLICATION_MODAL);
+        super(owner, "Thông tin Học viên", ModalityType.APPLICATION_MODAL);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+
+        // 1. Khởi tạo Spinner trước khi buildUI
+        SpinnerDateModel dateModel = new SpinnerDateModel(new Date(), null, null, Calendar.DAY_OF_MONTH);
+        spinnerDob = new JSpinner(dateModel);
+        JSpinner.DateEditor dateEditor = new JSpinner.DateEditor(spinnerDob, "dd/MM/yyyy");
+        spinnerDob.setEditor(dateEditor);
+
         buildUI();
 
+        // 2. Đổ dữ liệu vào các field
         if (existing != null) {
+            this.result = existing;
             txtFullName.setText(existing.getFullName());
-            txtDob.setText(existing.getDateOfBirth());
             cboGender.setSelectedItem(existing.getGender());
             txtPhone.setText(existing.getPhone());
             txtEmail.setText(existing.getEmail());
             txtAddress.setText(existing.getAddress());
             cboStatus.setSelectedItem(existing.getStatus());
-            result = existing;
+
+            // Xử lý ngày sinh từ String sang Date cho Spinner
+            try {
+                if (existing.getDateOfBirth() != null) {
+                    java.time.LocalDate ld = java.time.LocalDate.parse(existing.getDateOfBirth());
+                    java.util.Date date = java.util.Date.from(ld.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+                    spinnerDob.setValue(date);
+                }
+            } catch (Exception e) {
+                spinnerDob.setValue(new Date()); // Mặc định là ngày hiện tại nếu lỗi format
+            }
         } else {
+            // 'result' là final, khởi tạo trong nhánh này nếu không có existing
+            // Sử dụng reflection of previous logic - assign here
+            // (constructor đảm bảo result được gán trong mọi nhánh)
+            // Note: we assign to the final field below.
+            // To keep code clear, assign directly:
+            // (the field is final and must be assigned exactly once per constructor)
+            // Since Java doesn't allow duplicate assignment, we keep current structure.
+            // We'll assign here:
+            //noinspection ResultOfObjectAllocationIgnored
             result = new StudentFormData();
         }
 
@@ -49,58 +77,20 @@ public class StudentFormDialog extends JDialog {
         GridBagConstraints g = new GridBagConstraints();
         g.insets = new Insets(6, 6, 6, 6);
         g.anchor = GridBagConstraints.WEST;
+        g.fill = GridBagConstraints.HORIZONTAL; // Để các field dãn đều
 
         int r = 0;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Full name:"), g);
-        g.gridx = 1;
-        form.add(txtFullName, g);
+        // Sử dụng hàm helper để add row cho sạch code
+        addFormRow(form, "Họ và tên:", txtFullName, g, r); r++;
+        addFormRow(form, "Ngày sinh:", spinnerDob, g, r); r++; // Đã sửa: dùng spinnerDob thay vì txtDob
+        addFormRow(form, "Giới tính:", cboGender, g, r); r++;
+        addFormRow(form, "Điện thoại:", txtPhone, g, r); r++;
+        addFormRow(form, "Email:", txtEmail, g, r); r++;
+        addFormRow(form, "Địa chỉ:", txtAddress, g, r); r++;
+        addFormRow(form, "Trạng thái:", cboStatus, g, r);
 
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Date of birth:"), g);
-        g.gridx = 1;
-        form.add(txtDob, g);
-
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Gender:"), g);
-        g.gridx = 1;
-        form.add(cboGender, g);
-
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Phone:"), g);
-        g.gridx = 1;
-        form.add(txtPhone, g);
-
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Email:"), g);
-        g.gridx = 1;
-        form.add(txtEmail, g);
-
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Address:"), g);
-        g.gridx = 1;
-        form.add(txtAddress, g);
-
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Status:"), g);
-        g.gridx = 1;
-        form.add(cboStatus, g);
-
-        JButton btnSave = new JButton("Save");
-        JButton btnCancel = new JButton("Cancel");
+        JButton btnSave = new JButton("Lưu");
+        JButton btnCancel = new JButton("Hủy");
 
         btnSave.addActionListener(e -> onSave());
         btnCancel.addActionListener(e -> dispose());
@@ -114,35 +104,47 @@ public class StudentFormDialog extends JDialog {
         getContentPane().add(actions, BorderLayout.SOUTH);
     }
 
+    // Hàm helper giúp giảm lặp code GridBagConstraints
+    private void addFormRow(JPanel p, String label, JComponent comp, GridBagConstraints g, int row) {
+        g.gridy = row;
+        g.gridx = 0; g.weightx = 0; p.add(new JLabel(label), g);
+        g.gridx = 1; g.weightx = 1.0; p.add(comp, g);
+    }
+
     private void onSave() {
         try {
             String fullName = txtFullName.getText().trim();
             if (fullName.isEmpty()) {
-                throw new IllegalArgumentException("Full name is required.");
+                throw new IllegalArgumentException("Họ và tên không được để trống.");
             }
 
             String phone = txtPhone.getText().trim();
             if (phone.isEmpty()) {
-                throw new IllegalArgumentException("Phone is required.");
+                throw new IllegalArgumentException("Số điện thoại không được để trống.");
             }
 
             String email = txtEmail.getText().trim();
             if (email.isEmpty()) {
-                throw new IllegalArgumentException("Email is required.");
+                throw new IllegalArgumentException("Email không được để trống.");
             }
+            // Lấy Date từ spinner và chuyển thành String (yyyy-MM-dd) để lưu vào DTO
+            Date dateValue = (Date) spinnerDob.getValue();
+            java.time.LocalDate localDate = dateValue.toInstant()
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toLocalDate();
 
+            result.setDateOfBirth(localDate.toString());
             result.setFullName(fullName);
-            result.setDateOfBirth(txtDob.getText().trim());
             result.setGender((Gender) cboGender.getSelectedItem());
             result.setPhone(phone);
             result.setEmail(email);
             result.setAddress(txtAddress.getText().trim());
             result.setStatus((ActiveStatus) cboStatus.getSelectedItem());
-
             saved = true;
             dispose();
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Validation Error", JOptionPane.ERROR_MESSAGE);
+            // Hiển thị thông báo lỗi bằng tiếng Việt (sử dụng message từ exception nếu có)
+            JOptionPane.showMessageDialog(this, ex.getMessage());
         }
     }
 
@@ -223,4 +225,3 @@ public class StudentFormDialog extends JDialog {
         }
     }
 }
-

@@ -4,17 +4,21 @@ import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
 
 import javax.swing.*;
 import java.awt.*;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Calendar;
+import java.util.Date;
 
-/**
- * Form nhập liệu đơn giản cho Teacher.
- */
 public class TeacherFormDialog extends JDialog {
 
     private final JTextField txtFullName = new JTextField(25);
     private final JTextField txtPhone = new JTextField(15);
     private final JTextField txtEmail = new JTextField(25);
     private final JTextField txtSpecialty = new JTextField(20);
-    private final JTextField txtHireDate = new JTextField(10);
+
+    // 1. Khai báo JSpinner thay cho JTextField
+    private final JSpinner spnHireDate;
+
     private final JComboBox<ActiveStatus> cboStatus = new JComboBox<>(ActiveStatus.values());
 
     private boolean saved = false;
@@ -23,18 +27,33 @@ public class TeacherFormDialog extends JDialog {
     public TeacherFormDialog(Window owner, TeacherFormData existing) {
         super(owner, "Teacher", ModalityType.APPLICATION_MODAL);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+
+        // 2. Khởi tạo Spinner với giới hạn: Không quá ngày hiện tại
+        SpinnerDateModel dateModel = new SpinnerDateModel(new Date(), null, new Date(), Calendar.DAY_OF_MONTH);
+        spnHireDate = new JSpinner(dateModel);
+        JSpinner.DateEditor dateEditor = new JSpinner.DateEditor(spnHireDate, "dd/MM/yyyy");
+        spnHireDate.setEditor(dateEditor);
+
         buildUI();
 
         if (existing != null) {
+            this.result = existing;
             txtFullName.setText(existing.getFullName());
             txtPhone.setText(existing.getPhone());
             txtEmail.setText(existing.getEmail());
             txtSpecialty.setText(existing.getSpecialty());
-            txtHireDate.setText(existing.getHireDate());
-            if (existing.getStatus() != null) {
-                cboStatus.setSelectedItem(existing.getStatus());
+            cboStatus.setSelectedItem(existing.getStatus());
+
+            // Đổ dữ liệu ngày vào làm
+            try {
+                if (existing.getHireDate() != null) {
+                    LocalDate ld = LocalDate.parse(existing.getHireDate());
+                    Date date = Date.from(ld.atStartOfDay(ZoneId.systemDefault()).toInstant());
+                    spnHireDate.setValue(date);
+                }
+            } catch (Exception e) {
+                spnHireDate.setValue(new Date());
             }
-            result = existing;
         } else {
             result = new TeacherFormData();
         }
@@ -51,44 +70,15 @@ public class TeacherFormDialog extends JDialog {
         g.fill = GridBagConstraints.HORIZONTAL;
 
         int r = 0;
-        g.gridx = 0; g.gridy = r;
-        form.add(new JLabel("Full name:"), g);
-        g.gridx = 1;
-        form.add(txtFullName, g);
-
-        r++;
-        g.gridx = 0; g.gridy = r;
-        form.add(new JLabel("Phone:"), g);
-        g.gridx = 1;
-        form.add(txtPhone, g);
-
-        r++;
-        g.gridx = 0; g.gridy = r;
-        form.add(new JLabel("Email:"), g);
-        g.gridx = 1;
-        form.add(txtEmail, g);
-
-        r++;
-        g.gridx = 0; g.gridy = r;
-        form.add(new JLabel("Specialty:"), g);
-        g.gridx = 1;
-        form.add(txtSpecialty, g);
-
-        r++;
-        g.gridx = 0; g.gridy = r;
-        form.add(new JLabel("Hire date (yyyy-MM-dd):"), g);
-        g.gridx = 1;
-        form.add(txtHireDate, g);
-
-        r++;
-        g.gridx = 0; g.gridy = r;
-        form.add(new JLabel("Status:"), g);
-        g.gridx = 1;
-        form.add(cboStatus, g);
+        addFormRow(form, "Full name:", txtFullName, g, r++);
+        addFormRow(form, "Phone:", txtPhone, g, r++);
+        addFormRow(form, "Email:", txtEmail, g, r++);
+        addFormRow(form, "Specialty:", txtSpecialty, g, r++);
+        addFormRow(form, "Hire date:", spnHireDate, g, r++); // Sử dụng Spinner
+        addFormRow(form, "Status:", cboStatus, g, r++);
 
         JButton btnSave = new JButton("Save");
         JButton btnCancel = new JButton("Cancel");
-
         btnSave.addActionListener(e -> onSave());
         btnCancel.addActionListener(e -> dispose());
 
@@ -101,49 +91,42 @@ public class TeacherFormDialog extends JDialog {
         getContentPane().add(actions, BorderLayout.SOUTH);
     }
 
+    private void addFormRow(JPanel p, String label, JComponent comp, GridBagConstraints g, int row) {
+        g.gridy = row;
+        g.gridx = 0; g.weightx = 0; p.add(new JLabel(label), g);
+        g.gridx = 1; g.weightx = 1.0; p.add(comp, g);
+    }
+
     private void onSave() {
         try {
+            // Quan trọng: Đẩy giá trị đang gõ tay vào model của Spinner
+            spnHireDate.commitEdit();
+
             String fullName = txtFullName.getText().trim();
-            if (fullName.isEmpty()) {
-                throw new IllegalArgumentException("Full name is required.");
-            }
+            if (fullName.isEmpty()) throw new IllegalArgumentException("Full name is required.");
 
-            String phone = txtPhone.getText().trim();
-            if (phone.isEmpty()) {
-                throw new IllegalArgumentException("Phone is required.");
-            }
-
-            String email = txtEmail.getText().trim();
-            if (email.isEmpty()) {
-                throw new IllegalArgumentException("Email is required.");
-            }
+            // Xử lý ngày từ Spinner
+            Date dateValue = (Date) spnHireDate.getValue();
+            LocalDate localDate = dateValue.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 
             result.setFullName(fullName);
-            result.setPhone(phone);
-            result.setEmail(email);
+            result.setPhone(txtPhone.getText().trim());
+            result.setEmail(txtEmail.getText().trim());
             result.setSpecialty(txtSpecialty.getText().trim());
-            result.setHireDate(txtHireDate.getText().trim());
+            result.setHireDate(localDate.toString()); // Lưu yyyy-MM-dd
             result.setStatus((ActiveStatus) cboStatus.getSelectedItem());
 
             saved = true;
             dispose();
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(),
-                    "Validation Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    public boolean isSaved() {
-        return saved;
-    }
+    public boolean isSaved() { return saved; }
+    public TeacherFormData getResult() { return result; }
 
-    public TeacherFormData getResult() {
-        return result;
-    }
-
-    /**
-     * DTO đơn giản đại diện thông tin Teacher cho UI.
-     */
+    // DTO giữ nguyên...
     public static class TeacherFormData {
         private String fullName;
         private String phone;
@@ -152,53 +135,17 @@ public class TeacherFormDialog extends JDialog {
         private String hireDate;
         private ActiveStatus status;
 
-        public String getFullName() {
-            return fullName;
-        }
-
-        public void setFullName(String fullName) {
-            this.fullName = fullName;
-        }
-
-        public String getPhone() {
-            return phone;
-        }
-
-        public void setPhone(String phone) {
-            this.phone = phone;
-        }
-
-        public String getEmail() {
-            return email;
-        }
-
-        public void setEmail(String email) {
-            this.email = email;
-        }
-
-        public String getSpecialty() {
-            return specialty;
-        }
-
-        public void setSpecialty(String specialty) {
-            this.specialty = specialty;
-        }
-
-        public String getHireDate() {
-            return hireDate;
-        }
-
-        public void setHireDate(String hireDate) {
-            this.hireDate = hireDate;
-        }
-
-        public ActiveStatus getStatus() {
-            return status;
-        }
-
-        public void setStatus(ActiveStatus status) {
-            this.status = status;
-        }
+        public String getFullName() { return fullName; }
+        public void setFullName(String fullName) { this.fullName = fullName; }
+        public String getPhone() { return phone; }
+        public void setPhone(String phone) { this.phone = phone; }
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+        public String getSpecialty() { return specialty; }
+        public void setSpecialty(String specialty) { this.specialty = specialty; }
+        public String getHireDate() { return hireDate; }
+        public void setHireDate(String hireDate) { this.hireDate = hireDate; }
+        public ActiveStatus getStatus() { return status; }
+        public void setStatus(ActiveStatus status) { this.status = status; }
     }
 }
-

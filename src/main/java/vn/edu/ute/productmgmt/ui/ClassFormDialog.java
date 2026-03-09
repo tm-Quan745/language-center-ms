@@ -1,240 +1,220 @@
 package vn.edu.ute.productmgmt.ui;
 
+import com.formdev.flatlaf.FlatClientProperties;
+import vn.edu.ute.productmgmt.model.*;
+import vn.edu.ute.productmgmt.service.*;
 import vn.edu.ute.productmgmt.model.enums.ClassStatus;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Calendar;
+import java.util.Date;
 
-/**
- * Form nhập liệu đơn giản cho Class, dùng mock object.
- */
 public class ClassFormDialog extends JDialog {
+    private final JComboBox<Course> cboCourse = new JComboBox<>();
+    private final JComboBox<Teacher> cboTeacher = new JComboBox<>();
+    private final JComboBox<Room> cboRoom = new JComboBox<>();
+    private final JComboBox<Branch> cboBranch = new JComboBox<>();
+    private final JTextField txtMaxStudent = new JTextField();
 
-    private final JTextField txtClassName = new JTextField(25);
-    private final JComboBox<String> cboCourse = new JComboBox<>(new String[]{
-            "IELTS Foundation", "TOEIC 500+", "Communication"
-    });
-    private final JComboBox<String> cboTeacher = new JComboBox<>(new String[]{
-            "Thay An", "Co Binh", "Thay Cuong"
-    });
-    private final JComboBox<String> cboRoom = new JComboBox<>(new String[]{
-            "Room 101", "Room 202", "Room 303"
-    });
-    private final JTextField txtStartDate = new JTextField(10);
-    private final JTextField txtEndDate = new JTextField(10);
-    private final JTextField txtMaxStudent = new JTextField(5);
-    private final JComboBox<ClassStatus> cboStatus = new JComboBox<>(ClassStatus.values());
+    private final JSpinner spnStart;
+    private final JSpinner spnEnd;
 
     private boolean saved = false;
-    private ClassFormData result;
+    private final TeachingClass result;
 
-    public ClassFormDialog(Window owner, ClassFormData existing) {
-        super(owner, "Class", ModalityType.APPLICATION_MODAL);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        buildUI();
+    public ClassFormDialog(Window owner, TeachingClass existing,
+                           CourseService cs, TeacherService ts, RoomService rs, BranchService bs) {
+        super(owner, "Thiết lập lớp học", ModalityType.APPLICATION_MODAL);
+
+        setSize(580, 680);
+        setLayout(new BorderLayout());
+
+        // Khởi tạo Spinner trước khi build UI
+        spnStart = createDateSpinner(new Date());
+        spnEnd = createDateSpinner(addMonths(new Date(), 3));
+
+        // Load Data vào ComboBox
+        try {
+            cs.findAll().forEach(cboCourse::addItem);
+            ts.findAll().forEach(cboTeacher::addItem);
+            rs.findAll().forEach(cboRoom::addItem);
+            bs.findAll().forEach(cboBranch::addItem);
+        } catch (Exception ignored) {}
 
         if (existing != null) {
-            txtClassName.setText(existing.getClassName());
-            cboCourse.setSelectedItem(existing.getCourseName());
-            cboTeacher.setSelectedItem(existing.getTeacherName());
-            cboRoom.setSelectedItem(existing.getRoomName());
-            txtStartDate.setText(existing.getStartDate());
-            txtEndDate.setText(existing.getEndDate());
-            txtMaxStudent.setText(existing.getMaxStudent());
-            if (existing.getStatus() != null) cboStatus.setSelectedItem(existing.getStatus());
-            result = existing;
+            this.result = existing;
+            cboCourse.setSelectedItem(existing.getCourse());
+            cboTeacher.setSelectedItem(existing.getTeacher());
+            cboRoom.setSelectedItem(existing.getRoom());
+            cboBranch.setSelectedItem(existing.getBranch());
+            txtMaxStudent.setText(String.valueOf(existing.getMaxStudent()));
+            spnStart.setValue(toDate(existing.getStartDate()));
+            spnEnd.setValue(toDate(existing.getEndDate()));
         } else {
-            result = new ClassFormData();
+            this.result = new TeachingClass();
         }
 
-        pack();
+        buildUI();
         setLocationRelativeTo(owner);
     }
 
+    private JSpinner createDateSpinner(Date defaultDate) {
+        SpinnerDateModel model = new SpinnerDateModel(defaultDate, null, null, Calendar.DAY_OF_MONTH);
+        JSpinner spinner = new JSpinner(model);
+        spinner.setEditor(new JSpinner.DateEditor(spinner, "dd/MM/yyyy"));
+        spinner.setPreferredSize(new Dimension(0, 40));
+        spinner.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
+        return spinner;
+    }
+
     private void buildUI() {
+        JPanel root = new JPanel(new BorderLayout());
+        root.setBackground(Color.WHITE);
+        root.setBorder(new EmptyBorder(30, 40, 30, 40));
+
+        // --- Header ---
+        JLabel lblHeader = new JLabel("Thông tin lớp học");
+        lblHeader.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblHeader.setBorder(new EmptyBorder(0, 0, 25, 0));
+        root.add(lblHeader, BorderLayout.NORTH);
+
+        // --- Form Body ---
         JPanel form = new JPanel(new GridBagLayout());
-        GridBagConstraints g = new GridBagConstraints();
-        g.insets = new Insets(6, 6, 6, 6);
-        g.anchor = GridBagConstraints.WEST;
+        form.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(8, 0, 8, 0);
 
-        int r = 0;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Class name:"), g);
-        g.gridx = 1;
-        form.add(txtClassName, g);
+        // Các hàng dữ liệu
+        addFormRow(form, gbc, 0, "Khóa học đào tạo:", cboCourse);
+        addFormRow(form, gbc, 1, "Giảng viên phụ trách:", cboTeacher);
+        addFormRow(form, gbc, 2, "Phòng học:", cboRoom);
+        addFormRow(form, gbc, 3, "Chi nhánh quản lý:", cboBranch);
 
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Course:"), g);
-        g.gridx = 1;
-        form.add(cboCourse, g);
+        // Sĩ số
+        gbc.gridy = 4; gbc.gridx = 0; gbc.weightx = 0;
+        form.add(createLabel("Sĩ số tối đa:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0; gbc.insets = new Insets(8, 20, 8, 0);
+        txtMaxStudent.setPreferredSize(new Dimension(0, 40));
+        txtMaxStudent.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
+        txtMaxStudent.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Ví dụ: 30");
+        txtMaxStudent.putClientProperty(FlatClientProperties.TEXT_FIELD_LEADING_ICON, new JLabel(" 👥 "));
+        form.add(txtMaxStudent, gbc);
 
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Teacher:"), g);
-        g.gridx = 1;
-        form.add(cboTeacher, g);
+        // Ngày tháng
+        gbc.insets = new Insets(8, 0, 8, 0);
+        addFormRow(form, gbc, 5, "Ngày bắt đầu:", spnStart);
+        addFormRow(form, gbc, 6, "Ngày kết thúc:", spnEnd);
 
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Room:"), g);
-        g.gridx = 1;
-        form.add(cboRoom, g);
+        root.add(form, BorderLayout.CENTER);
 
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Start date:"), g);
-        g.gridx = 1;
-        form.add(txtStartDate, g);
+        // --- Buttons ---
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
+        footer.setOpaque(false);
+        footer.setBorder(new EmptyBorder(25, 0, 0, 0));
 
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("End date:"), g);
-        g.gridx = 1;
-        form.add(txtEndDate, g);
-
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Max students:"), g);
-        g.gridx = 1;
-        form.add(txtMaxStudent, g);
-
-        r++;
-        g.gridx = 0;
-        g.gridy = r;
-        form.add(new JLabel("Status:"), g);
-        g.gridx = 1;
-        form.add(cboStatus, g);
-
-        JButton btnSave = new JButton("Save");
-        JButton btnCancel = new JButton("Cancel");
-
-        btnSave.addActionListener(e -> onSave());
+        JButton btnCancel = new JButton("Hủy");
+        btnCancel.setPreferredSize(new Dimension(100, 42));
+        btnCancel.putClientProperty(FlatClientProperties.STYLE, "arc: 12; background: #f2f2f2; borderWidth: 0");
         btnCancel.addActionListener(e -> dispose());
 
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        actions.add(btnSave);
-        actions.add(btnCancel);
+        JButton btnSave = new JButton("Lưu lớp học");
+        btnSave.setPreferredSize(new Dimension(140, 42));
+        btnSave.putClientProperty(FlatClientProperties.STYLE, "arc: 12; background: #198754; foreground: #ffffff; borderWidth: 0");
+        btnSave.addActionListener(e -> onSave());
 
-        getContentPane().setLayout(new BorderLayout(10, 10));
-        getContentPane().add(form, BorderLayout.CENTER);
-        getContentPane().add(actions, BorderLayout.SOUTH);
+        footer.add(btnCancel);
+        footer.add(btnSave);
+        root.add(footer, BorderLayout.SOUTH);
+
+        add(root);
+    }
+
+    private void addFormRow(JPanel p, GridBagConstraints gbc, int row, String label, JComponent comp) {
+        gbc.gridy = row;
+        gbc.gridx = 0; gbc.weightx = 0;
+        gbc.insets = new Insets(8, 0, 8, 0);
+        p.add(createLabel(label), gbc);
+
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        gbc.insets = new Insets(8, 20, 8, 0);
+        if (comp instanceof JComboBox) {
+            comp.setPreferredSize(new Dimension(0, 40));
+            comp.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
+        }
+        p.add(comp, gbc);
+    }
+
+    private JLabel createLabel(String text) {
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 14));
+        lbl.setForeground(new Color(80, 80, 80));
+        return lbl;
     }
 
     private void onSave() {
         try {
-            String className = txtClassName.getText().trim();
-            if (className.isEmpty()) {
-                throw new IllegalArgumentException("Class name is required.");
+            spnStart.commitEdit();
+            spnEnd.commitEdit();
+
+            LocalDate start = toLocalDate((Date) spnStart.getValue());
+            LocalDate end = toLocalDate((Date) spnEnd.getValue());
+
+            if (start.isAfter(end)) {
+                throw new IllegalArgumentException("Ngày bắt đầu phải trước ngày kết thúc!");
             }
 
-            result.setClassName(className);
-            result.setCourseName((String) cboCourse.getSelectedItem());
-            result.setTeacherName((String) cboTeacher.getSelectedItem());
-            result.setRoomName((String) cboRoom.getSelectedItem());
-            result.setStartDate(txtStartDate.getText().trim());
-            result.setEndDate(txtEndDate.getText().trim());
-            result.setMaxStudent(txtMaxStudent.getText().trim());
-            result.setStatus((ClassStatus) cboStatus.getSelectedItem());
+            Course selectedCourse = (Course) cboCourse.getSelectedItem();
+            Branch selectedBranch = (Branch) cboBranch.getSelectedItem();
+            if (selectedCourse == null) throw new IllegalArgumentException("Vui lòng chọn khóa học!");
+
+            result.setCourse(selectedCourse);
+            result.setTeacher((Teacher) cboTeacher.getSelectedItem());
+            result.setRoom((Room) cboRoom.getSelectedItem());
+            result.setBranch(selectedBranch);
+            result.setMaxStudent(Integer.parseInt(txtMaxStudent.getText().trim()));
+            result.setStartDate(start);
+            result.setEndDate(end);
+
+            if (result.getId() == null) {
+                String datePart = start.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+                String branchPart = (selectedBranch != null) ? selectedBranch.getBranchName() : "Gen";
+                String autoName = String.format("%s_%s_%s",
+                        selectedCourse.getCourseName().replaceAll("\\s+", ""),
+                        branchPart,
+                        datePart);
+
+                result.setClassName(autoName);
+                result.setStatus(ClassStatus.Open);
+            }
 
             saved = true;
             dispose();
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Validation Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage(), "Thông báo lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    public boolean isSaved() {
-        return saved;
+    private LocalDate toLocalDate(Date date) {
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
-    public ClassFormData getResult() {
-        return result;
+    private Date toDate(LocalDate ld) {
+        return ld == null ? new Date() : Date.from(ld.atStartOfDay(ZoneId.systemDefault()).toInstant());
     }
 
-    /**
-     * DTO đơn giản đại diện thông tin Class cho UI.
-     */
-    public static class ClassFormData {
-        private String className;
-        private String courseName;
-        private String teacherName;
-        private String roomName;
-        private String startDate;
-        private String endDate;
-        private String maxStudent;
-        private ClassStatus status;
-
-        public String getClassName() {
-            return className;
-        }
-
-        public void setClassName(String className) {
-            this.className = className;
-        }
-
-        public String getCourseName() {
-            return courseName;
-        }
-
-        public void setCourseName(String courseName) {
-            this.courseName = courseName;
-        }
-
-        public String getTeacherName() {
-            return teacherName;
-        }
-
-        public void setTeacherName(String teacherName) {
-            this.teacherName = teacherName;
-        }
-
-        public String getRoomName() {
-            return roomName;
-        }
-
-        public void setRoomName(String roomName) {
-            this.roomName = roomName;
-        }
-
-        public String getStartDate() {
-            return startDate;
-        }
-
-        public void setStartDate(String startDate) {
-            this.startDate = startDate;
-        }
-
-        public String getEndDate() {
-            return endDate;
-        }
-
-        public void setEndDate(String endDate) {
-            this.endDate = endDate;
-        }
-
-        public String getMaxStudent() {
-            return maxStudent;
-        }
-
-        public void setMaxStudent(String maxStudent) {
-            this.maxStudent = maxStudent;
-        }
-
-        public ClassStatus getStatus() {
-            return status;
-        }
-
-        public void setStatus(ClassStatus status) {
-            this.status = status;
-        }
+    private Date addMonths(Date date, int months) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        cal.add(Calendar.MONTH, months);
+        return cal.getTime();
     }
+
+    public boolean isSaved() { return saved; }
+    public TeachingClass getResult() { return result; }
 }
-

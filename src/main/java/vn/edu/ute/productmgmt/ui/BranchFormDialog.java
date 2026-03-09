@@ -1,109 +1,155 @@
 package vn.edu.ute.productmgmt.ui;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 public class BranchFormDialog extends JDialog {
 
-    private final JTextField txtName = new JTextField(25);
-    private final JTextField txtAddress = new JTextField(25);
-    private final JTextField txtPhone = new JTextField(15);
+    private final JTextField txtName = new JTextField();
+    private final JTextField txtAddress = new JTextField();
+    private final JTextField txtPhone = new JTextField();
     private final JComboBox<ActiveStatus> cboStatus = new JComboBox<>(ActiveStatus.values());
 
     private boolean saved = false;
     private BranchFormData result;
 
     public BranchFormDialog(Window owner, BranchFormData existing) {
-        super(owner, "Chi nhánh", ModalityType.APPLICATION_MODAL);
+        super(owner, "Thông tin chi nhánh", ModalityType.APPLICATION_MODAL);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+
+        setSize(550, 450); // Tăng chiều rộng để nhãn và textbox nằm cùng hàng thoải mái
+        setLayout(new BorderLayout());
+        setBackground(Color.WHITE);
+
         buildUI();
 
         if (existing != null) {
             txtName.setText(existing.getName());
             txtAddress.setText(existing.getAddress());
             txtPhone.setText(existing.getPhone());
-            if (existing.getStatus() != null) cboStatus.setSelectedItem(existing.getStatus());
-            result = existing;
+            cboStatus.setSelectedItem(existing.getStatus());
+            this.result = existing;
         } else {
-            result = new BranchFormData();
+            this.result = new BranchFormData();
+            cboStatus.setSelectedItem(ActiveStatus.Active);
         }
 
-        pack();
         setLocationRelativeTo(owner);
     }
 
     private void buildUI() {
-        JPanel form = new JPanel(new GridBagLayout());
-        GridBagConstraints g = new GridBagConstraints();
-        g.insets = new Insets(6, 6, 6, 6);
-        g.anchor = GridBagConstraints.WEST;
-        g.fill = GridBagConstraints.HORIZONTAL;
+        JPanel root = new JPanel(new BorderLayout());
+        root.setBackground(Color.WHITE);
+        root.setBorder(new EmptyBorder(30, 30, 30, 30));
 
-        int r = 0;
-        g.gridx = 0; g.gridy = r;
-        form.add(new JLabel("Tên chi nhánh:"), g);
-        g.gridx = 1;
-        form.add(txtName, g);
+        // --- Tiêu đề ---
+        JLabel lblHeader = new JLabel("Cấu hình chi nhánh");
+        lblHeader.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblHeader.setBorder(new EmptyBorder(0, 0, 25, 0));
+        root.add(lblHeader, BorderLayout.NORTH);
 
-        r++;
-        g.gridx = 0; g.gridy = r;
-        form.add(new JLabel("Địa chỉ:"), g);
-        g.gridx = 1;
-        form.add(txtAddress, g);
+        // --- Form Body (GridBagLayout để đưa Label và Textbox lên 1 hàng) ---
+        JPanel formBody = new JPanel(new GridBagLayout());
+        formBody.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(8, 0, 8, 0); // Khoảng cách giữa các hàng
 
-        r++;
-        g.gridx = 0; g.gridy = r;
-        form.add(new JLabel("Điện thoại:"), g);
-        g.gridx = 1;
-        form.add(txtPhone, g);
+        // Thêm các hàng
+        addFormRow(formBody, gbc, 0, "Tên chi nhánh:", txtName, "Nhập tên chi nhánh...", " 🏢 ");
+        addFormRow(formBody, gbc, 1, "Địa chỉ trụ sở:", txtAddress, "Địa chỉ chi tiết...", " 📍 ");
+        addFormRow(formBody, gbc, 2, "Số điện thoại:", txtPhone, "Số hotline...", " 📞 ");
 
-        r++;
-        g.gridx = 0; g.gridy = r;
-        form.add(new JLabel("Trạng thái:"), g);
-        g.gridx = 1;
-        form.add(cboStatus, g);
+        // Hàng Trạng thái
+        gbc.gridy = 3;
+        gbc.gridx = 0; gbc.weightx = 0;
+        formBody.add(createLabel("Trạng thái:"), gbc);
 
-        JButton btnSave = new JButton("Lưu");
-        JButton btnCancel = new JButton("Hủy");
-        btnSave.addActionListener(e -> onSave());
+        gbc.gridx = 1; gbc.weightx = 1;
+        gbc.insets = new Insets(8, 15, 8, 0); // Đẩy combo sang phải để tách khỏi label
+        styleCombo(cboStatus);
+        formBody.add(cboStatus, gbc);
+
+        root.add(formBody, BorderLayout.CENTER);
+
+        // --- Nút hành động ---
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
+        footer.setOpaque(false);
+        footer.setBorder(new EmptyBorder(25, 0, 0, 0));
+
+        JButton btnCancel = new JButton("Hủy bỏ");
+        btnCancel.setPreferredSize(new Dimension(100, 40));
+        btnCancel.putClientProperty(FlatClientProperties.STYLE, "arc: 12; background: #f2f2f2; borderWidth: 0");
         btnCancel.addActionListener(e -> dispose());
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        actions.add(btnSave);
-        actions.add(btnCancel);
 
-        getContentPane().setLayout(new BorderLayout(10, 10));
-        getContentPane().add(form, BorderLayout.CENTER);
-        getContentPane().add(actions, BorderLayout.SOUTH);
+        JButton btnSave = new JButton("Lưu dữ liệu");
+        btnSave.setPreferredSize(new Dimension(130, 40));
+        btnSave.putClientProperty(FlatClientProperties.STYLE, "arc: 12; background: #0d6efd; foreground: #ffffff; borderWidth: 0");
+        btnSave.addActionListener(e -> onSave());
+
+        footer.add(btnCancel);
+        footer.add(btnSave);
+        root.add(footer, BorderLayout.SOUTH);
+
+        add(root);
+    }
+
+    private void addFormRow(JPanel panel, GridBagConstraints gbc, int row, String labelText, JTextField field, String placeholder, String icon) {
+        gbc.gridy = row;
+
+        // Cột 0: Label
+        gbc.gridx = 0;
+        gbc.weightx = 0;
+        gbc.insets = new Insets(8, 0, 8, 0);
+        panel.add(createLabel(labelText), gbc);
+
+        // Cột 1: Textbox
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.insets = new Insets(8, 15, 8, 0); // Tạo khoảng cách 15px giữa nhãn và ô nhập
+        field.setPreferredSize(new Dimension(0, 42));
+        field.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, placeholder);
+        field.putClientProperty(FlatClientProperties.TEXT_FIELD_LEADING_ICON, new JLabel(icon));
+        field.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
+        panel.add(field, gbc);
+    }
+
+    private void styleCombo(JComboBox<?> combo) {
+        combo.setPreferredSize(new Dimension(0, 42));
+        combo.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
+    }
+
+    private JLabel createLabel(String text) {
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 14));
+        lbl.setForeground(new Color(70, 70, 70));
+        return lbl;
     }
 
     private void onSave() {
-        try {
-            String name = txtName.getText().trim();
-            if (name.isEmpty()) {
-                throw new IllegalArgumentException("Tên chi nhánh không được để trống.");
-            }
-            result.setName(name);
-            result.setAddress(txtAddress.getText().trim());
-            result.setPhone(txtPhone.getText().trim());
-            result.setStatus((ActiveStatus) cboStatus.getSelectedItem());
-            saved = true;
-            dispose();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        String name = txtName.getText().trim();
+        if (name.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập tên chi nhánh!", "Thiếu thông tin", JOptionPane.WARNING_MESSAGE);
+            return;
         }
+        result.setName(name);
+        result.setAddress(txtAddress.getText().trim());
+        result.setPhone(txtPhone.getText().trim());
+        result.setStatus((ActiveStatus) cboStatus.getSelectedItem());
+        saved = true;
+        dispose();
     }
 
     public boolean isSaved() { return saved; }
     public BranchFormData getResult() { return result; }
 
     public static class BranchFormData {
-        private String name;
-        private String address;
-        private String phone;
+        private String name, address, phone;
         private ActiveStatus status;
-
         public String getName() { return name; }
         public void setName(String name) { this.name = name; }
         public String getAddress() { return address; }

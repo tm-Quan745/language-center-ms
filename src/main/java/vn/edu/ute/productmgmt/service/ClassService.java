@@ -9,7 +9,6 @@ import vn.edu.ute.productmgmt.repo.ClassRepository;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
 public class ClassService {
 
@@ -50,28 +49,18 @@ public class ClassService {
     // =============================
     // DELETE
     // =============================
-    public void deleteClass(UUID id) throws Exception {
-
+    public void deleteClass(Long id) throws Exception {
         tx.runInTransaction(em -> {
             classRepo.delete(em, id);
             return null;
         });
     }
 
-    public TeachingClass findById(UUID id) {
+    public TeachingClass findById(Long id) {
 
         EntityManager em = Jpa.em();
         try {
             return classRepo.findById(em, id);
-        } finally {
-            em.close();
-        }
-    }
-    public TeachingClass findById(String id) {
-        UUID uuid = UUID.fromString(id);
-        EntityManager em = Jpa.em();
-        try {
-            return classRepo.findById(em,uuid);
         } finally {
             em.close();
         }

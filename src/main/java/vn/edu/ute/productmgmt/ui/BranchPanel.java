@@ -1,10 +1,14 @@
 package vn.edu.ute.productmgmt.ui;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import vn.edu.ute.productmgmt.model.Branch;
+import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
 import vn.edu.ute.productmgmt.service.BranchService;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,141 +24,205 @@ public class BranchPanel extends JPanel {
 
     public BranchPanel(BranchService branchService) {
         this.branchService = branchService;
-        setLayout(new BorderLayout(8, 8));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        setLayout(new BorderLayout(20, 20));
+        setOpaque(false);
+        setBorder(new EmptyBorder(0, 0, 0, 0));
+
         buildUI();
+
         table.getSelectionModel().addListSelectionListener(e -> {
             if (e.getValueIsAdjusting()) return;
             onTableSelection();
         });
+
         loadTable();
     }
 
     private void buildUI() {
-        add(buildActionBar(), BorderLayout.NORTH);
+        // --- Header Section ---
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
+
+        JLabel lblTitle = new JLabel("Hệ thống chi nhánh");
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        headerPanel.add(lblTitle, BorderLayout.WEST);
+
+        headerPanel.add(buildActionBar(), BorderLayout.EAST);
+        add(headerPanel, BorderLayout.NORTH);
+
+        // --- Table Section ---
         add(buildTableArea(), BorderLayout.CENTER);
-        add(lblInfo, BorderLayout.SOUTH);
+
+        // --- Status Bar ---
+        JPanel statusBar = new JPanel(new BorderLayout());
+        statusBar.setOpaque(false);
+        lblInfo.setForeground(Color.GRAY);
+        lblInfo.setFont(new Font("Segoe UI", Font.ITALIC, 13));
+        statusBar.add(lblInfo, BorderLayout.WEST);
+        add(statusBar, BorderLayout.SOUTH);
     }
 
     private JComponent buildActionBar() {
-        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
-        JButton btnAdd = new JButton("Thêm mới");
-        JButton btnSave = new JButton("Chỉnh sửa");
-        JButton btnDelete = new JButton("Xóa");
+        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        bar.setOpaque(false);
+
+        JButton btnAdd = createBtn("Thêm mới", "#198754", " ➕ ");
+        JButton btnEdit = createBtn("Chỉnh sửa", "#ffc107", " 📝 ");
+        JButton btnDelete = createBtn("Xóa bỏ", "#dc3545", " 🗑️ ");
         JButton btnRefresh = new JButton("Tải lại");
+
+        // Styling Refresh Button
+        btnRefresh.setPreferredSize(new Dimension(100, 38));
+        btnRefresh.putClientProperty(FlatClientProperties.STYLE, "arc: 10");
+
         btnAdd.addActionListener(e -> onAdd());
-        btnSave.addActionListener(e -> onSave());
+        btnEdit.addActionListener(e -> onSave());
         btnDelete.addActionListener(e -> onDelete());
         btnRefresh.addActionListener(e -> loadTable());
-        bar.add(btnAdd);
-        bar.add(btnSave);
-        bar.add(btnDelete);
+
         bar.add(btnRefresh);
+        bar.add(btnAdd);
+        bar.add(btnEdit);
+        bar.add(btnDelete);
         return bar;
     }
 
-    private JComponent buildTableArea() {
-        JPanel wrapper = new JPanel(new BorderLayout(8, 8));
-        UI.stylePanelBorder(wrapper, "Danh sách chi nhánh");
-        JScrollPane scroll = new JScrollPane(table);
-        UI.styleTable(table);
-        wrapper.add(scroll, BorderLayout.CENTER);
-        return wrapper;
+    private JButton createBtn(String text, String colorHex, String icon) {
+        JButton btn = new JButton(icon + text);
+        btn.setPreferredSize(new Dimension(120, 38));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        String fg = colorHex.equals("#ffc107") ? "#000000" : "#ffffff";
+        btn.putClientProperty(FlatClientProperties.STYLE,
+                "background: " + colorHex + "; foreground: " + fg + "; arc: 10; borderWidth: 0");
+        return btn;
     }
+
+    private JComponent buildTableArea() {
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230)));
+        scroll.putClientProperty(FlatClientProperties.STYLE, "arc: 15");
+
+        // Table UI Styling
+        table.setRowHeight(45);
+        table.setShowVerticalLines(false);
+        table.setIntercellSpacing(new Dimension(0, 0));
+        table.getTableHeader().setFont(new Font("Segoe UI Semibold", Font.PLAIN, 14));
+        table.getTableHeader().setPreferredSize(new Dimension(0, 45));
+
+        // Custom Renderer cho cột Trạng thái
+        table.getColumnModel().getColumn(3).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                JLabel c = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                c.setHorizontalAlignment(SwingConstants.CENTER);
+                if ("Active".equals(value.toString())) {
+                    c.setForeground(new Color(25, 135, 84));
+                    c.setText(" ● Hoạt động ");
+                } else {
+                    c.setForeground(Color.RED);
+                    c.setText(" ● Ngừng hoạt động ");
+                }
+                return c;
+            }
+        });
+
+        return scroll;
+    }
+
+    // --- Logic Methods ---
 
     private void loadTable() {
         try {
             List<Branch> list = branchService.findAll();
             tableModel.setData(list);
-            lblInfo.setText("Tổng số: " + list.size() + " chi nhánh.");
+            lblInfo.setText("Hệ thống hiện có " + list.size() + " chi nhánh đang vận hành.");
             clearSelection();
         } catch (Exception ex) {
-            lblInfo.setText("Lỗi: " + ex.getMessage());
-            JOptionPane.showMessageDialog(this, "Không tải được danh sách: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            lblInfo.setText("Lỗi kết nối dữ liệu.");
+            JOptionPane.showMessageDialog(this, "Lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void onTableSelection() {
         int row = table.getSelectedRow();
-        selectedBranch = row < 0 ? null : tableModel.getBranchAt(row);
+        if (row >= 0) {
+            int modelRow = table.convertRowIndexToModel(row);
+            selectedBranch = tableModel.getBranchAt(modelRow);
+        } else {
+            selectedBranch = null;
+        }
     }
 
     private void onAdd() {
         BranchFormDialog dialog = new BranchFormDialog(SwingUtilities.getWindowAncestor(this), null);
         dialog.setVisible(true);
-        if (!dialog.isSaved()) return;
-        BranchFormDialog.BranchFormData data = dialog.getResult();
-        Branch b = formDataToBranch(data, null);
-        if (b == null) return;
-        try {
-            branchService.create(b);
-            JOptionPane.showMessageDialog(this, "Đã thêm chi nhánh.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            loadTable();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        if (dialog.isSaved()) {
+            try {
+                branchService.create(formDataToBranch(dialog.getResult(), null));
+                loadTable();
+                JOptionPane.showMessageDialog(this, "Đã khởi tạo chi nhánh mới thành công!");
+            } catch (Exception ex) { showError(ex.getMessage()); }
         }
     }
 
     private void onSave() {
         if (selectedBranch == null) {
-            JOptionPane.showMessageDialog(this, "Chọn một chi nhánh để sửa.", "Chưa chọn", JOptionPane.WARNING_MESSAGE);
+            showWarning("Vui lòng chọn một chi nhánh để cập nhật thông tin!");
             return;
         }
-        BranchFormDialog.BranchFormData existing = branchToFormData(selectedBranch);
-        BranchFormDialog dialog = new BranchFormDialog(SwingUtilities.getWindowAncestor(this), existing);
+        BranchFormDialog dialog = new BranchFormDialog(SwingUtilities.getWindowAncestor(this), branchToFormData(selectedBranch));
         dialog.setVisible(true);
-        if (!dialog.isSaved()) return;
-        BranchFormDialog.BranchFormData data = dialog.getResult();
-        Branch b = formDataToBranch(data, selectedBranch.getId());
-        if (b == null) return;
-        try {
-            branchService.update(b);
-            JOptionPane.showMessageDialog(this, "Đã cập nhật chi nhánh.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            loadTable();
-            clearSelection();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        if (dialog.isSaved()) {
+            try {
+                branchService.update(formDataToBranch(dialog.getResult(), selectedBranch.getId()));
+                loadTable();
+                JOptionPane.showMessageDialog(this, "Thông tin chi nhánh đã được cập nhật.");
+            } catch (Exception ex) { showError(ex.getMessage()); }
         }
     }
 
     private void onDelete() {
         if (selectedBranch == null) {
-            JOptionPane.showMessageDialog(this, "Chọn một chi nhánh để xóa.", "Chưa chọn", JOptionPane.WARNING_MESSAGE);
+            showWarning("Chọn chi nhánh cần xóa!");
             return;
         }
-        int ok = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa chi nhánh này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
-        if (ok != JOptionPane.YES_OPTION) return;
-        try {
-            branchService.delete(selectedBranch.getId());
-            JOptionPane.showMessageDialog(this, "Đã xóa chi nhánh.", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-            loadTable();
-            clearSelection();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        int ok = JOptionPane.showConfirmDialog(this,
+                "Xác nhận xóa chi nhánh: " + selectedBranch.getBranchName() + "?\nHành động này không thể hoàn tác.",
+                "Cảnh báo", JOptionPane.YES_NO_OPTION, JOptionPane.ERROR_MESSAGE);
+
+        if (ok == JOptionPane.YES_OPTION) {
+            try {
+                branchService.delete(selectedBranch.getId());
+                loadTable();
+            } catch (Exception ex) { showError(ex.getMessage()); }
         }
+    }
+
+    private void showError(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Lỗi", JOptionPane.ERROR_MESSAGE);
+    }
+
+    private void showWarning(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Thông báo", JOptionPane.WARNING_MESSAGE);
     }
 
     private BranchFormDialog.BranchFormData branchToFormData(Branch b) {
         BranchFormDialog.BranchFormData data = new BranchFormDialog.BranchFormData();
         data.setName(b.getBranchName());
-        data.setAddress(b.getAddress() != null ? b.getAddress() : "");
-        data.setPhone(b.getPhone() != null ? b.getPhone() : "");
+        data.setAddress(b.getAddress());
+        data.setPhone(b.getPhone());
         data.setStatus(b.getStatus());
         return data;
     }
 
     private Branch formDataToBranch(BranchFormDialog.BranchFormData data, Long keepId) {
-        String name = data.getName() != null ? data.getName().trim() : "";
-        if (name.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Tên chi nhánh không được để trống.", "Lỗi", JOptionPane.WARNING_MESSAGE);
-            return null;
-        }
         Branch b = new Branch();
         if (keepId != null) b.setId(keepId);
-        b.setBranchName(name);
-        b.setAddress(data.getAddress() != null && !data.getAddress().isEmpty() ? data.getAddress() : null);
-        b.setPhone(data.getPhone() != null && !data.getPhone().isEmpty() ? data.getPhone() : null);
-        b.setStatus(data.getStatus() != null ? data.getStatus() : vn.edu.ute.productmgmt.model.enums.ActiveStatus.Active);
+        b.setBranchName(data.getName());
+        b.setAddress(data.getAddress());
+        b.setPhone(data.getPhone());
+        b.setStatus(data.getStatus() != null ? data.getStatus() : ActiveStatus.Active);
         return b;
     }
 
@@ -163,8 +231,9 @@ public class BranchPanel extends JPanel {
         table.clearSelection();
     }
 
+    // --- Table Model ---
     private static class BranchTableModel extends AbstractTableModel {
-        private final String[] columns = {"Tên chi nhánh", "Địa chỉ", "Điện thoại", "Trạng thái"};
+        private final String[] columns = {"Tên chi nhánh", "Địa chỉ trụ sở", "Số điện thoại", "Trạng thái"};
         private List<Branch> data = new ArrayList<>();
 
         void setData(List<Branch> data) {
@@ -172,27 +241,17 @@ public class BranchPanel extends JPanel {
             fireTableDataChanged();
         }
 
-        Branch getBranchAt(int row) {
-            return (row >= 0 && row < data.size()) ? data.get(row) : null;
-        }
-
-        @Override
-        public int getRowCount() { return data.size(); }
-
-        @Override
-        public int getColumnCount() { return columns.length; }
-
-        @Override
-        public String getColumnName(int col) { return columns[col]; }
-
-        @Override
-        public Object getValueAt(int row, int col) {
+        Branch getBranchAt(int row) { return data.get(row); }
+        @Override public int getRowCount() { return data.size(); }
+        @Override public int getColumnCount() { return columns.length; }
+        @Override public String getColumnName(int col) { return columns[col]; }
+        @Override public Object getValueAt(int row, int col) {
             Branch b = data.get(row);
             return switch (col) {
-                case 0 -> b.getBranchName();
-                case 1 -> b.getAddress() != null ? b.getAddress() : "";
-                case 2 -> b.getPhone() != null ? b.getPhone() : "";
-                case 3 -> b.getStatus() != null ? b.getStatus().name() : "";
+                case 0 -> "  " + b.getBranchName(); // Padding nhẹ cho text
+                case 1 -> b.getAddress();
+                case 2 -> b.getPhone();
+                case 3 -> b.getStatus();
                 default -> "";
             };
         }
