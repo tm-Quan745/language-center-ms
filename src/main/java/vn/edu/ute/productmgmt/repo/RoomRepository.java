@@ -16,4 +16,6 @@ public interface RoomRepository {
     Room findById(EntityManager em, Long id);
 
     List<Room> findAll(EntityManager em);
+
+    List<Room> findByBranch(EntityManager em, Long branchId);
 }

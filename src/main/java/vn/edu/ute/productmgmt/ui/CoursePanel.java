@@ -2,8 +2,6 @@ package vn.edu.ute.productmgmt.ui;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import vn.edu.ute.productmgmt.model.Course;
-import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
-import vn.edu.ute.productmgmt.model.enums.CourseLevel;
 import vn.edu.ute.productmgmt.model.enums.DurationUnit;
 import vn.edu.ute.productmgmt.service.CourseService;
 
@@ -20,6 +18,7 @@ public class CoursePanel extends JPanel {
     private final CourseService courseService;
 
     private final JLabel lblInfo = new JLabel(" ");
+    private final JTextField txtSearch = new JTextField(18);
 
     private final CourseTableModel tableModel = new CourseTableModel();
     private final JTable table = new JTable(tableModel);
@@ -49,11 +48,30 @@ public class CoursePanel extends JPanel {
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setOpaque(false);
 
-        JLabel lblTitle = new JLabel("Quản lý Khóa học");
-        lblTitle.setFont(new Font("Segoe UI",Font.BOLD,22));
+        // Left: search field + button (replace title)
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        left.setOpaque(false);
+        txtSearch.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Tìm khóa học...");
+        txtSearch.setPreferredSize(new Dimension(300, 40));
+        txtSearch.putClientProperty(FlatClientProperties.TEXT_FIELD_LEADING_ICON, new JLabel(" 🔍 "));
+        txtSearch.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
 
-        headerPanel.add(lblTitle,BorderLayout.WEST);
-        headerPanel.add(buildActionBar(),BorderLayout.EAST);
+        JButton btnSearch = new JButton("Tìm kiếm");
+        btnSearch.setPreferredSize(new Dimension(100, 40));
+
+        btnSearch.putClientProperty(
+                FlatClientProperties.STYLE,
+                "background: #0d6efd; foreground: #ffffff; arc: 12"
+        );
+
+        btnSearch.addActionListener(e -> onSearch());
+
+        left.add(txtSearch);
+        left.add(Box.createHorizontalStrut(10));
+        left.add(btnSearch);
+
+        headerPanel.add(left, BorderLayout.WEST);
+        headerPanel.add(buildActionBar(), BorderLayout.EAST);
 
         add(headerPanel,BorderLayout.NORTH);
 
@@ -78,7 +96,7 @@ public class CoursePanel extends JPanel {
         JButton btnAdd = createBtn("Thêm","#0d6efd"," ➕ ");
         JButton btnSave = createBtn("Chỉnh sửa","#ffc107"," 📝 ");
         JButton btnDelete = createBtn("Xóa","#dc3545"," 🗑 ");
-        JButton btnRefresh = new JButton("Tải lại");
+        JButton btnRefresh = new JButton("🔄 Tải lại");
 
         btnRefresh.setPreferredSize(new Dimension(100,38));
         btnRefresh.putClientProperty(FlatClientProperties.STYLE,"arc:10");
@@ -399,6 +417,23 @@ public class CoursePanel extends JPanel {
         selectedCourse = null;
 
         table.clearSelection();
+    }
+
+    private void onSearch() {
+        String kw = txtSearch.getText() != null ? txtSearch.getText().trim().toLowerCase() : "";
+        if (kw.isEmpty()) {
+            loadTable();
+            return;
+        }
+        List<Course> all = courseService.findAll();
+        List<Course> filtered = new ArrayList<>();
+        for (Course c : all) {
+            if (c.getCourseName() != null && c.getCourseName().toLowerCase().contains(kw)) {
+                filtered.add(c);
+            }
+        }
+        tableModel.setData(filtered);
+        lblInfo.setText("Tìm thấy: " + filtered.size() + " kết quả");
     }
 
     private static class CourseTableModel extends AbstractTableModel{

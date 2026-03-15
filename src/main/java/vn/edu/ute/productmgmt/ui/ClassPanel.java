@@ -55,57 +55,63 @@ public class ClassPanel extends JPanel {
 
     private void buildUI() {
 
-        JPanel header = new JPanel(new BorderLayout());
-        header.setOpaque(false);
+        // Follow NotificationPanel style: header with left search and right action bar
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
 
-        JLabel title = new JLabel("Quản lý Lớp học");
-        title.setFont(new Font("Segoe UI",Font.BOLD,22));
+        // Left: search field + button
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        left.setOpaque(false);
+        txtSearch.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Tìm lớp học...");
+        txtSearch.setPreferredSize(new Dimension(300, 40));
+        txtSearch.putClientProperty(FlatClientProperties.TEXT_FIELD_LEADING_ICON, new JLabel(" 🔍 "));
+        txtSearch.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
 
-        header.add(title,BorderLayout.WEST);
-        header.add(buildActionBar(),BorderLayout.EAST);
+        JButton btnSearch = new JButton("Tìm kiếm");
+        btnSearch.setPreferredSize(new Dimension(100, 40));
+        btnSearch.putClientProperty(FlatClientProperties.STYLE, "background: #0d6efd; foreground: #ffffff; arc: 12");
+        btnSearch.addActionListener(e -> onSearch());
 
-        add(header,BorderLayout.NORTH);
+        left.add(txtSearch);
+        left.add(Box.createHorizontalStrut(10));
+        left.add(btnSearch);
 
-        add(buildTableArea(),BorderLayout.CENTER);
+        headerPanel.add(left, BorderLayout.WEST);
+        headerPanel.add(buildActionBar(), BorderLayout.EAST);
+
+        add(headerPanel, BorderLayout.NORTH);
+
+        add(buildTableArea(), BorderLayout.CENTER);
 
         JPanel statusBar = new JPanel(new BorderLayout());
         statusBar.setOpaque(false);
 
         lblInfo.setForeground(Color.GRAY);
-        lblInfo.setFont(new Font("Segoe UI",Font.ITALIC,13));
+        lblInfo.setFont(new Font("Segoe UI", Font.ITALIC, 13));
 
-        statusBar.add(lblInfo,BorderLayout.WEST);
+        statusBar.add(lblInfo, BorderLayout.WEST);
 
-        add(statusBar,BorderLayout.SOUTH);
+        add(statusBar, BorderLayout.SOUTH);
     }
 
     private JComponent buildActionBar() {
 
-        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT,10,0));
+        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         bar.setOpaque(false);
 
-        txtSearch.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,"Tìm lớp học...");
-        txtSearch.setPreferredSize(new Dimension(180,36));
+        JButton btnAdd = createBtn("Thêm", "#0d6efd", "➕ ");
+        JButton btnEdit = createBtn("Sửa", "#ffc107", "📝 ");
+        JButton btnDelete = createBtn("Xóa", "#dc3545", "🗑 ");
+        JButton btnRefresh = new JButton("🔄 Tải lại");
 
-        JButton btnSearch = new JButton("Tìm");
-        btnSearch.setPreferredSize(new Dimension(70,36));
+        btnRefresh.setPreferredSize(new Dimension(100, 38));
+        btnRefresh.putClientProperty(FlatClientProperties.STYLE, "arc: 10");
 
-        JButton btnAdd = createBtn("Thêm","#0d6efd","➕ ");
-        JButton btnEdit = createBtn("Sửa","#ffc107","📝 ");
-        JButton btnDelete = createBtn("Xóa","#dc3545","🗑 ");
-        JButton btnRefresh = new JButton("Tải lại");
-
-        btnRefresh.setPreferredSize(new Dimension(90,36));
-        btnRefresh.putClientProperty(FlatClientProperties.STYLE,"arc:10");
-
-        btnSearch.addActionListener(e -> onSearch());
         btnAdd.addActionListener(e -> onAdd());
         btnEdit.addActionListener(e -> onEdit());
         btnDelete.addActionListener(e -> onDelete());
         btnRefresh.addActionListener(e -> loadTableAll());
 
-        bar.add(txtSearch);
-        bar.add(btnSearch);
         bar.add(btnRefresh);
         bar.add(btnAdd);
         bar.add(btnEdit);
@@ -114,22 +120,16 @@ public class ClassPanel extends JPanel {
         return bar;
     }
 
-    private JButton createBtn(String text,String color,String icon){
-
+    private JButton createBtn(String text, String colorHex, String icon) {
         JButton btn = new JButton(icon + text);
-
-        btn.setPreferredSize(new Dimension(110,36));
+        btn.setPreferredSize(new Dimension(120, 38));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-        String fg = color.equals("#ffc107") ? "#000000" : "#ffffff";
-
+        String fg = colorHex.equals("#ffc107") ? "#000000" : "#ffffff";
         btn.putClientProperty(FlatClientProperties.STYLE,
-                "background:" + color +
-                        ";foreground:" + fg +
-                        ";arc:10;borderWidth:0");
-
+                "background: " + colorHex + "; foreground: " + fg + "; arc: 10; borderWidth: 0");
         return btn;
     }
+
 
     private JComponent buildTableArea(){
 

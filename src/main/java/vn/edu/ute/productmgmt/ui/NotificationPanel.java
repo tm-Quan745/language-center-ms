@@ -2,7 +2,6 @@ package vn.edu.ute.productmgmt.ui;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import vn.edu.ute.productmgmt.model.Notification;
-import vn.edu.ute.productmgmt.model.enums.NotificationTargetRole;
 import vn.edu.ute.productmgmt.service.NotificationService;
 
 import javax.swing.*;
@@ -20,6 +19,7 @@ public class NotificationPanel extends JPanel {
     private final NotificationService notificationService;
 
     private final JLabel lblInfo = new JLabel(" ");
+    private final JTextField txtSearch = new JTextField(18);
     private final NotificationTableModel tableModel = new NotificationTableModel();
     private final JTable table = new JTable(tableModel);
     private Notification selectedNotification;
@@ -46,10 +46,23 @@ public class NotificationPanel extends JPanel {
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setOpaque(false);
 
-        JLabel lblTitle = new JLabel("Trung tâm Thông báo");
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        headerPanel.add(lblTitle, BorderLayout.WEST);
+        // Left: search field + button (replaces title)
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        left.setOpaque(false);
+        txtSearch.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Tìm tiêu đề hoặc nội dung...");
+        txtSearch.setPreferredSize(new Dimension(300, 40));
+        txtSearch.putClientProperty(FlatClientProperties.TEXT_FIELD_LEADING_ICON, new JLabel(" 🔍 "));
+        txtSearch.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
 
+        JButton btnSearch = new JButton("Tìm kiếm");
+        btnSearch.setPreferredSize(new Dimension(100, 40));
+        btnSearch.putClientProperty(FlatClientProperties.STYLE, "background: #0d6efd; foreground: #ffffff; arc: 12");
+        btnSearch.addActionListener(e -> onSearch());
+        left.add(txtSearch);
+        left.add(Box.createHorizontalStrut(10));
+        left.add(btnSearch);
+
+        headerPanel.add(left, BorderLayout.WEST);
         headerPanel.add(buildActionBar(), BorderLayout.EAST);
         add(headerPanel, BorderLayout.NORTH);
 
@@ -72,7 +85,7 @@ public class NotificationPanel extends JPanel {
         JButton btnAdd = createBtn("Soạn tin", "#0d6efd", " ✉ ");
         JButton btnEdit = createBtn("Sửa tin", "#ffc107", " 📝 ");
         JButton btnDelete = createBtn("Xóa bỏ", "#dc3545", " 🗑️ ");
-        JButton btnRefresh = new JButton("Tải lại");
+        JButton btnRefresh = new JButton("🔄 Tải lại");
 
         btnRefresh.setPreferredSize(new Dimension(100, 38));
         btnRefresh.putClientProperty(FlatClientProperties.STYLE, "arc: 10");
@@ -144,7 +157,7 @@ public class NotificationPanel extends JPanel {
         dialog.setVisible(true);
         if (dialog.isSaved()) {
             try {
-                notificationService.create(formDataToNotification(dialog.getResult(), null));
+                notificationService.create(formDataToNotification(dialog.getResult()));
                 loadTable();
                 JOptionPane.showMessageDialog(this, "Đã phát hành thông báo mới.");
             } catch (Exception ex) { showError(ex.getMessage()); }
@@ -183,6 +196,23 @@ public class NotificationPanel extends JPanel {
         }
     }
 
+    private void onSearch() {
+        String kw = txtSearch.getText() != null ? txtSearch.getText().trim().toLowerCase() : "";
+        if (kw.isEmpty()) {
+            loadTable();
+            return;
+        }
+        List<Notification> all = notificationService.findAll();
+        List<Notification> filtered = new ArrayList<>();
+        for (Notification n : all) {
+            String title = n.getTitle() != null ? n.getTitle().toLowerCase() : "";
+            String content = n.getContent() != null ? n.getContent().toLowerCase() : "";
+            if (title.contains(kw) || content.contains(kw)) filtered.add(n);
+        }
+        tableModel.setData(filtered);
+        lblInfo.setText("Tìm thấy: " + filtered.size() + " kết quả");
+    }
+
     private void showError(String msg) { JOptionPane.showMessageDialog(this, msg, "Lỗi", JOptionPane.ERROR_MESSAGE); }
     private void showWarning(String msg) { JOptionPane.showMessageDialog(this, msg, "Cảnh báo", JOptionPane.WARNING_MESSAGE); }
 
@@ -194,9 +224,8 @@ public class NotificationPanel extends JPanel {
         return data;
     }
 
-    private Notification formDataToNotification(NotificationFormDialog.NotificationFormData data, Long id) {
+    private Notification formDataToNotification(NotificationFormDialog.NotificationFormData data) {
         Notification n = new Notification();
-        if (id != null) n.setId(id);
         n.setTitle(data.getTitle());
         n.setContent(data.getContent());
         n.setTargetRole(data.getTargetRole());

@@ -82,4 +82,13 @@ public class RoomService {
             throw new IllegalArgumentException("Sức chứa phải > 0");
         }
     }
+
+    public List<Room> findByBranch(Long branchId) {
+        EntityManager em = Jpa.em();
+        try {
+            return roomRepo.findByBranch(em, branchId);
+        } finally {
+            em.close();
+        }
+    }
 }

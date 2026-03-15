@@ -2,7 +2,6 @@ package vn.edu.ute.productmgmt.ui;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import vn.edu.ute.productmgmt.model.Room;
-import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
 import vn.edu.ute.productmgmt.service.BranchService;
 import vn.edu.ute.productmgmt.service.RoomService;
 
@@ -14,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Panel quản lý phòng học, chuẩn hóa theo ClassPanel
+ * Panel quản lý phòng học, chuẩn hóa theo NotificationPanel
  */
 public class RoomPanel extends JPanel {
 
@@ -46,16 +45,31 @@ public class RoomPanel extends JPanel {
 
     private void buildUI() {
 
-        JPanel header = new JPanel(new BorderLayout());
-        header.setOpaque(false);
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
 
-        JLabel title = new JLabel("Quản lý Phòng học");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        // Left: search field + button (rooms often don't have search in original; keep placeholder)
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        left.setOpaque(false);
+        JTextField txtSearch = new JTextField(18);
+        txtSearch.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Tìm phòng...");
+        txtSearch.setPreferredSize(new Dimension(300, 40));
+        txtSearch.putClientProperty(FlatClientProperties.TEXT_FIELD_LEADING_ICON, new JLabel(" 🔍 "));
+        txtSearch.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
 
-        header.add(title, BorderLayout.WEST);
-        header.add(buildActionBar(), BorderLayout.EAST);
+        JButton btnSearch = new JButton("Tìm kiếm");
+        btnSearch.setPreferredSize(new Dimension(100, 40));
+        btnSearch.putClientProperty(FlatClientProperties.STYLE, "background: #0d6efd; foreground: #ffffff; arc: 12");
+        btnSearch.addActionListener(e -> loadTable());
 
-        add(header, BorderLayout.NORTH);
+        left.add(txtSearch);
+        left.add(Box.createHorizontalStrut(10));
+        left.add(btnSearch);
+
+        headerPanel.add(left, BorderLayout.WEST);
+        headerPanel.add(buildActionBar(), BorderLayout.EAST);
+
+        add(headerPanel, BorderLayout.NORTH);
 
         add(buildTableArea(), BorderLayout.CENTER);
 
@@ -78,10 +92,10 @@ public class RoomPanel extends JPanel {
         JButton btnAdd = createBtn("Thêm", "#0d6efd", "➕ ");
         JButton btnEdit = createBtn("Sửa", "#ffc107", "📝 ");
         JButton btnDelete = createBtn("Xóa", "#dc3545", "🗑 ");
-        JButton btnRefresh = new JButton("Tải lại");
+        JButton btnRefresh = new JButton("🔄 Tải lại");
 
-        btnRefresh.setPreferredSize(new Dimension(90, 36));
-        btnRefresh.putClientProperty(FlatClientProperties.STYLE, "arc:10");
+        btnRefresh.setPreferredSize(new Dimension(100, 38));
+        btnRefresh.putClientProperty(FlatClientProperties.STYLE, "arc: 10");
 
         btnAdd.addActionListener(e -> onAdd());
         btnEdit.addActionListener(e -> onSave());

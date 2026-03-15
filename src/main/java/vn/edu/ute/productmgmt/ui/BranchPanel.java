@@ -18,6 +18,7 @@ public class BranchPanel extends JPanel {
     private final BranchService branchService;
 
     private final JLabel lblInfo = new JLabel(" ");
+    private final JTextField txtSearch = new JTextField(18);
     private final BranchTableModel tableModel = new BranchTableModel();
     private final JTable table = new JTable(tableModel);
     private Branch selectedBranch;
@@ -44,11 +45,30 @@ public class BranchPanel extends JPanel {
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setOpaque(false);
 
-        JLabel lblTitle = new JLabel("Hệ thống chi nhánh");
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        headerPanel.add(lblTitle, BorderLayout.WEST);
+        // Left: search box + search button (replaces title)
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        left.setOpaque(false);
+        txtSearch.setPreferredSize(new Dimension(300, 40));
+        txtSearch.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Tìm theo tên chi nhánh hoặc địa chỉ...");
+        txtSearch.putClientProperty(FlatClientProperties.TEXT_FIELD_LEADING_ICON, new JLabel(" 🔍 "));
+        txtSearch.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
 
-        headerPanel.add(buildActionBar(), BorderLayout.EAST);
+        JButton btnSearch = new JButton("Tìm kiếm");
+        btnSearch.setPreferredSize(new Dimension(100, 40));
+        btnSearch.putClientProperty(FlatClientProperties.STYLE, "background: #0d6efd; foreground: #ffffff; arc: 12");
+        btnSearch.addActionListener(e -> onSearch());
+        left.add(txtSearch);
+        left.add(Box.createHorizontalStrut(10));
+        left.add(btnSearch);
+
+        // Bên phải: Chức năng
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        right.setOpaque(false);
+
+        right.add(buildActionBar());
+
+        headerPanel.add(left, BorderLayout.WEST);
+        headerPanel.add(right, BorderLayout.EAST);
         add(headerPanel, BorderLayout.NORTH);
 
         // --- Table Section ---
@@ -64,16 +84,16 @@ public class BranchPanel extends JPanel {
     }
 
     private JComponent buildActionBar() {
+
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         bar.setOpaque(false);
 
         JButton btnAdd = createBtn("Thêm mới", "#198754", " ➕ ");
         JButton btnEdit = createBtn("Chỉnh sửa", "#ffc107", " 📝 ");
         JButton btnDelete = createBtn("Xóa bỏ", "#dc3545", " 🗑️ ");
-        JButton btnRefresh = new JButton("Tải lại");
+        JButton btnRefresh = new JButton("🔄 Tải lại");
 
-        // Styling Refresh Button
-        btnRefresh.setPreferredSize(new Dimension(100, 38));
+        btnRefresh.setPreferredSize(new Dimension(110, 38));
         btnRefresh.putClientProperty(FlatClientProperties.STYLE, "arc: 10");
 
         btnAdd.addActionListener(e -> onAdd());
@@ -85,6 +105,7 @@ public class BranchPanel extends JPanel {
         bar.add(btnAdd);
         bar.add(btnEdit);
         bar.add(btnDelete);
+
         return bar;
     }
 
@@ -229,6 +250,23 @@ public class BranchPanel extends JPanel {
     private void clearSelection() {
         selectedBranch = null;
         table.clearSelection();
+    }
+
+    private void onSearch() {
+        String kw = txtSearch.getText() != null ? txtSearch.getText().trim().toLowerCase() : "";
+        if (kw.isEmpty()) {
+            loadTable();
+            return;
+        }
+        List<Branch> all = branchService.findAll();
+        List<Branch> filtered = new ArrayList<>();
+        for (Branch b : all) {
+            String name = b.getBranchName() != null ? b.getBranchName().toLowerCase() : "";
+            String addr = b.getAddress() != null ? b.getAddress().toLowerCase() : "";
+            if (name.contains(kw) || addr.contains(kw)) filtered.add(b);
+        }
+        tableModel.setData(filtered);
+        lblInfo.setText("Tìm thấy: " + filtered.size() + " kết quả");
     }
 
     // --- Table Model ---

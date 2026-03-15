@@ -22,10 +22,8 @@ public class AttendancePanel extends JPanel {
     private final ClassService classService;
 
     private JComboBox<TeachingClass> cboClass;
-    private JButton btnLoad;
-    private JButton btnSave;
+    private final JTextField txtSearch = new JTextField(18);
 
-    private JTable table;
     private DefaultTableModel model;
 
     private List<Student> students = new ArrayList<>();
@@ -44,7 +42,29 @@ public class AttendancePanel extends JPanel {
 
     private void buildUI(){
 
-        add(createHeader(),BorderLayout.NORTH);
+        // Header follows NotificationPanel style: left = search, right = action bar
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+
+        // LEFT search area
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        left.setOpaque(false);
+        txtSearch.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Tìm tên lớp...");
+        txtSearch.setPreferredSize(new Dimension(280, 36));
+        JButton btnSearch = new JButton("Tìm kiếm");
+        btnSearch.setPreferredSize(new Dimension(100,40));
+        btnSearch.putClientProperty(FlatClientProperties.STYLE,"background:#0d6efd;foreground:#ffffff;arc:12");
+        btnSearch.addActionListener(e -> onSearch());
+        left.add(txtSearch);
+        left.add(Box.createHorizontalStrut(10));
+        left.add(btnSearch);
+
+        header.add(left, BorderLayout.WEST);
+
+        // RIGHT action bar (class selector + load)
+        header.add(buildActionBar(), BorderLayout.EAST);
+
+        add(header, BorderLayout.NORTH);
 
         add(createTableArea(),BorderLayout.CENTER);
 
@@ -52,13 +72,7 @@ public class AttendancePanel extends JPanel {
 
     }
 
-    private JComponent createHeader(){
-
-        JPanel header = new JPanel(new BorderLayout());
-        header.setOpaque(false);
-
-        JLabel title = new JLabel("Điểm danh học viên");
-        title.setFont(new Font("Segoe UI",Font.BOLD,22));
+    private JComponent buildActionBar(){
 
         JPanel actionBar = new JPanel(new FlowLayout(FlowLayout.RIGHT,10,0));
         actionBar.setOpaque(false);
@@ -66,9 +80,8 @@ public class AttendancePanel extends JPanel {
         cboClass = new JComboBox<>();
         cboClass.setPreferredSize(new Dimension(220,36));
 
-        btnLoad = new JButton("Tải danh sách");
+        JButton btnLoad = new JButton("Tải danh sách");
         btnLoad.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
         btnLoad.putClientProperty(
                 FlatClientProperties.STYLE,
                 "background:#0d6efd;foreground:#fff;arc:10;borderWidth:0"
@@ -78,12 +91,9 @@ public class AttendancePanel extends JPanel {
         actionBar.add(cboClass);
         actionBar.add(btnLoad);
 
-        header.add(title,BorderLayout.WEST);
-        header.add(actionBar,BorderLayout.EAST);
-
         btnLoad.addActionListener(e->loadStudents());
 
-        return header;
+        return actionBar;
     }
 
     private JComponent createTableArea(){
@@ -103,16 +113,16 @@ public class AttendancePanel extends JPanel {
 
         };
 
-        table = new JTable(model);
+        JTable localTable = new JTable(model);
 
-        table.setRowHeight(42);
-        table.setShowVerticalLines(false);
+        localTable.setRowHeight(42);
+        localTable.setShowVerticalLines(false);
 
-        table.getTableHeader().setFont(
+        localTable.getTableHeader().setFont(
                 new Font("Segoe UI Semibold",Font.PLAIN,14)
         );
 
-        JScrollPane scroll = new JScrollPane(table);
+        JScrollPane scroll = new JScrollPane(localTable);
 
         scroll.setBorder(
                 BorderFactory.createLineBorder(new Color(230,230,230))
@@ -131,7 +141,7 @@ public class AttendancePanel extends JPanel {
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         bottom.setOpaque(false);
 
-        btnSave = new JButton("Lưu điểm danh");
+        JButton btnSave = new JButton("Lưu điểm danh");
         btnSave.setPreferredSize(new Dimension(160,38));
 
         btnSave.putClientProperty(
@@ -217,6 +227,23 @@ public class AttendancePanel extends JPanel {
                 this,
                 "Đã lưu điểm danh thành công!"
         );
+    }
+
+    private void onSearch(){
+        String kw = txtSearch.getText() != null ? txtSearch.getText().trim().toLowerCase() : "";
+        if (kw.isEmpty()) {
+            cboClass.setSelectedIndex(-1);
+            return;
+        }
+        for (int i = 0; i < cboClass.getItemCount(); i++) {
+            TeachingClass c = cboClass.getItemAt(i);
+            if (c != null && c.getClassName() != null && c.getClassName().toLowerCase().contains(kw)) {
+                cboClass.setSelectedIndex(i);
+                loadStudents();
+                return;
+            }
+        }
+        JOptionPane.showMessageDialog(this, "Không tìm thấy lớp: " + kw);
     }
 
 }

@@ -38,4 +38,15 @@ public class JpaRoomRepository implements RoomRepository {
                 Room.class
         ).getResultList();
     }
+
+    @Override
+    public List<Room> findByBranch(EntityManager em, Long branchId) {
+        String jpql = "SELECT r FROM Room r WHERE r.branch.id = :branchId";
+
+        return em.createQuery(jpql, Room.class)
+                .setParameter("branchId", branchId)
+                .getResultList();
+    }
+
+
 }

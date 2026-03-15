@@ -15,6 +15,7 @@ import java.util.Calendar;
 import java.util.Date;
 
 public class ClassFormDialog extends JDialog {
+    private final RoomService roomService;
     private final JComboBox<Course> cboCourse = new JComboBox<>();
     private final JComboBox<Teacher> cboTeacher = new JComboBox<>();
     private final JComboBox<Room> cboRoom = new JComboBox<>();
@@ -30,6 +31,7 @@ public class ClassFormDialog extends JDialog {
     public ClassFormDialog(Window owner, TeachingClass existing,
                            CourseService cs, TeacherService ts, RoomService rs, BranchService bs) {
         super(owner, "Thiết lập lớp học", ModalityType.APPLICATION_MODAL);
+        this.roomService = rs;
 
         setSize(580, 680);
         setLayout(new BorderLayout());
@@ -42,7 +44,7 @@ public class ClassFormDialog extends JDialog {
         try {
             cs.findAll().forEach(cboCourse::addItem);
             ts.findAll().forEach(cboTeacher::addItem);
-            rs.findAll().forEach(cboRoom::addItem);
+            cboBranch.addItem(null);
             bs.findAll().forEach(cboBranch::addItem);
         } catch (Exception ignored) {}
 
@@ -50,7 +52,6 @@ public class ClassFormDialog extends JDialog {
             this.result = existing;
             cboCourse.setSelectedItem(existing.getCourse());
             cboTeacher.setSelectedItem(existing.getTeacher());
-            cboRoom.setSelectedItem(existing.getRoom());
             cboBranch.setSelectedItem(existing.getBranch());
             txtMaxStudent.setText(String.valueOf(existing.getMaxStudent()));
             spnStart.setValue(toDate(existing.getStartDate()));
@@ -58,9 +59,41 @@ public class ClassFormDialog extends JDialog {
         } else {
             this.result = new TeachingClass();
         }
+        cboBranch.addActionListener(e -> {
 
+            Branch branch = (Branch) cboBranch.getSelectedItem();
+
+            if(branch != null){
+                loadRoomsByBranch(branch);
+            }
+
+        });
         buildUI();
         setLocationRelativeTo(owner);
+    }
+
+    private void loadRoomsByBranch(Branch branch){
+
+        cboRoom.removeAllItems();
+
+        if(branch == null){
+            cboRoom.setEnabled(false);
+            return;
+        }
+
+        try{
+
+            // Lấy danh sách phòng theo chi nhánh
+            roomService.findByBranch(branch.getId())
+                    .forEach(cboRoom::addItem);
+            cboRoom.setEnabled(true);
+
+        }catch(Exception ex){
+
+            JOptionPane.showMessageDialog(this,
+                    "Không tải được phòng học: " + ex.getMessage());
+
+        }
     }
 
     private JSpinner createDateSpinner(Date defaultDate) {
@@ -93,8 +126,27 @@ public class ClassFormDialog extends JDialog {
         // Các hàng dữ liệu
         addFormRow(form, gbc, 0, "Khóa học đào tạo:", cboCourse);
         addFormRow(form, gbc, 1, "Giảng viên phụ trách:", cboTeacher);
-        addFormRow(form, gbc, 2, "Phòng học:", cboRoom);
-        addFormRow(form, gbc, 3, "Chi nhánh quản lý:", cboBranch);
+        addFormRow(form, gbc, 2, "Chi nhánh quản lý:", cboBranch);
+        cboBranch.setRenderer((list, value, index, isSelected, cellHasFocus) -> {
+
+            JLabel label = new JLabel();
+
+            if (value == null) {
+                label.setText("---- Chọn chi nhánh ----");
+            } else {
+                label.setText(((Branch) value).getBranchName());
+            }
+
+            if (isSelected) {
+                label.setBackground(list.getSelectionBackground());
+                label.setForeground(list.getSelectionForeground());
+                label.setOpaque(true);
+            }
+
+            return label;
+        });
+        addFormRow(form, gbc, 3, "Phòng học:", cboRoom);
+        cboRoom.setEnabled(false);
 
         // Sĩ số
         gbc.gridy = 4; gbc.gridx = 0; gbc.weightx = 0;

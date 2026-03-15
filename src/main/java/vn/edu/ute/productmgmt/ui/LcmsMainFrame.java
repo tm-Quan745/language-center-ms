@@ -287,42 +287,84 @@ public class LcmsMainFrame extends JFrame {
     }
 
     private DefaultMutableTreeNode buildMenuTree() {
+
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("Root");
 
-        // Nhóm: Quản trị
-        if (currentUser.getRole() == UserRole.Admin) {
+        UserRole role = currentUser.getRole();
+
+        /* ===================== ADMIN ===================== */
+        if (role == UserRole.Admin) {
+
             DefaultMutableTreeNode gAdmin = new DefaultMutableTreeNode("HỆ THỐNG");
             gAdmin.add(new DefaultMutableTreeNode(CARD_STAFF));
             gAdmin.add(new DefaultMutableTreeNode(CARD_BRANCH));
             gAdmin.add(new DefaultMutableTreeNode(CARD_NOTIFICATION));
             root.add(gAdmin);
+
+            DefaultMutableTreeNode gAcademic = new DefaultMutableTreeNode("HỌC VỤ");
+            gAcademic.add(new DefaultMutableTreeNode(CARD_COURSE));
+            gAcademic.add(new DefaultMutableTreeNode(CARD_CLASS));
+            gAcademic.add(new DefaultMutableTreeNode(CARD_SCHEDULE));
+            gAcademic.add(new DefaultMutableTreeNode(CARD_ROOM));
+            root.add(gAcademic);
+
+            DefaultMutableTreeNode gPeople = new DefaultMutableTreeNode("NHÂN SỰ");
+            gPeople.add(new DefaultMutableTreeNode(CARD_STUDENT));
+            gPeople.add(new DefaultMutableTreeNode(CARD_TEACHER));
+            gPeople.add(new DefaultMutableTreeNode(CARD_ENROLLMENT));
+            gPeople.add(new DefaultMutableTreeNode(CARD_PLACEMENT));
+            gPeople.add(new DefaultMutableTreeNode(CARD_ATTENDANCE));
+            gPeople.add(new DefaultMutableTreeNode(CARD_RESULT));
+            gPeople.add(new DefaultMutableTreeNode(CARD_CERTIFICATE));
+            root.add(gPeople);
+
+            DefaultMutableTreeNode gFinance = new DefaultMutableTreeNode("TÀI CHÍNH");
+            gFinance.add(new DefaultMutableTreeNode(CARD_INVOICE));
+            gFinance.add(new DefaultMutableTreeNode(CARD_PAYMENT));
+            gFinance.add(new DefaultMutableTreeNode(CARD_PROMOTION));
+            root.add(gFinance);
         }
 
-        // Nhóm: Đào tạo
-        DefaultMutableTreeNode gAcademic = new DefaultMutableTreeNode("HỌC VỤ");
-        gAcademic.add(new DefaultMutableTreeNode(CARD_COURSE));
-        gAcademic.add(new DefaultMutableTreeNode(CARD_CLASS));
-        gAcademic.add(new DefaultMutableTreeNode(CARD_SCHEDULE));
-        gAcademic.add(new DefaultMutableTreeNode(CARD_ROOM));
-        root.add(gAcademic);
+        /* ===================== STAFF ===================== */
+        if (role == UserRole.Staff) {
 
-        // Nhóm: Học viên & Nhân sự
-        DefaultMutableTreeNode gPeople = new DefaultMutableTreeNode("NHÂN SỰ");
-        gPeople.add(new DefaultMutableTreeNode(CARD_STUDENT));
-        gPeople.add(new DefaultMutableTreeNode(CARD_TEACHER));
-        gPeople.add(new DefaultMutableTreeNode(CARD_ENROLLMENT));
-        gPeople.add(new DefaultMutableTreeNode(CARD_PLACEMENT));
-        gPeople.add(new DefaultMutableTreeNode(CARD_ATTENDANCE));
-        gPeople.add(new DefaultMutableTreeNode(CARD_RESULT));
-        gPeople.add(new DefaultMutableTreeNode(CARD_CERTIFICATE));
-        root.add(gPeople);
+            DefaultMutableTreeNode gPeople = new DefaultMutableTreeNode("HỌC VIÊN");
+            gPeople.add(new DefaultMutableTreeNode(CARD_STUDENT));
+            gPeople.add(new DefaultMutableTreeNode(CARD_ENROLLMENT));
+            gPeople.add(new DefaultMutableTreeNode(CARD_PLACEMENT));
+            root.add(gPeople);
 
-        // Nhóm: Tài chính
-        DefaultMutableTreeNode gFinance = new DefaultMutableTreeNode("TÀI CHÍNH");
-        gFinance.add(new DefaultMutableTreeNode(CARD_INVOICE));
-        gFinance.add(new DefaultMutableTreeNode(CARD_PAYMENT));
-        gFinance.add(new DefaultMutableTreeNode(CARD_PROMOTION));
-        root.add(gFinance);
+            DefaultMutableTreeNode gFinance = new DefaultMutableTreeNode("TÀI CHÍNH");
+            gFinance.add(new DefaultMutableTreeNode(CARD_INVOICE));
+            gFinance.add(new DefaultMutableTreeNode(CARD_PAYMENT));
+            root.add(gFinance);
+        }
+
+        /* ===================== TEACHER ===================== */
+        if (role == UserRole.Teacher) {
+
+            DefaultMutableTreeNode gTeaching = new DefaultMutableTreeNode("GIẢNG DẠY");
+
+            gTeaching.add(new DefaultMutableTreeNode(CARD_CLASS));
+            gTeaching.add(new DefaultMutableTreeNode(CARD_SCHEDULE));
+            gTeaching.add(new DefaultMutableTreeNode(CARD_ATTENDANCE));
+            gTeaching.add(new DefaultMutableTreeNode(CARD_RESULT));
+
+            root.add(gTeaching);
+        }
+
+        /* ===================== STUDENT ===================== */
+        if (role == UserRole.Student) {
+
+            DefaultMutableTreeNode gStudent = new DefaultMutableTreeNode("HỌC TẬP");
+
+            gStudent.add(new DefaultMutableTreeNode(CARD_CLASS));
+            gStudent.add(new DefaultMutableTreeNode(CARD_SCHEDULE));
+            gStudent.add(new DefaultMutableTreeNode(CARD_RESULT));
+            gStudent.add(new DefaultMutableTreeNode(CARD_CERTIFICATE));
+
+            root.add(gStudent);
+        }
 
         return root;
     }

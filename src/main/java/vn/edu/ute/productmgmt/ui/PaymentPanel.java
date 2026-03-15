@@ -63,16 +63,30 @@ public class PaymentPanel extends JPanel {
 
     private void buildUI(){
 
-        JPanel header = new JPanel(new BorderLayout());
-        header.setOpaque(false);
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
 
-        JLabel title = new JLabel("Quản lý Thanh toán");
-        title.setFont(new Font("Segoe UI",Font.BOLD,22));
+        // Left: search field + button
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        left.setOpaque(false);
+        txtSearch.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Tìm tên học viên hoặc mã tham chiếu...");
+        txtSearch.setPreferredSize(new Dimension(300, 40));
+        txtSearch.putClientProperty(FlatClientProperties.TEXT_FIELD_LEADING_ICON, new JLabel(" 🔍 "));
+        txtSearch.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
 
-        header.add(title,BorderLayout.WEST);
-        header.add(buildActionBar(),BorderLayout.EAST);
+        JButton btnSearch = new JButton("Tìm kiếm");
+        btnSearch.setPreferredSize(new Dimension(100, 40));
+        btnSearch.putClientProperty(FlatClientProperties.STYLE, "background: #0d6efd; foreground: #ffffff; arc: 12");
+        btnSearch.addActionListener(e -> onSearch());
 
-        add(header,BorderLayout.NORTH);
+        left.add(txtSearch);
+        left.add(Box.createHorizontalStrut(10));
+        left.add(btnSearch);
+
+        headerPanel.add(left, BorderLayout.WEST);
+        headerPanel.add(buildActionBar(), BorderLayout.EAST);
+
+        add(headerPanel,BorderLayout.NORTH);
         add(buildTableArea(),BorderLayout.CENTER);
 
         JPanel status = new JPanel(new BorderLayout());
@@ -91,24 +105,14 @@ public class PaymentPanel extends JPanel {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT,10,0));
         bar.setOpaque(false);
 
-        txtSearch.putClientProperty(
-                FlatClientProperties.PLACEHOLDER_TEXT,
-                "Tìm tên học viên hoặc mã tham chiếu..."
-        );
-        txtSearch.setPreferredSize(new Dimension(200,36));
-
-        JButton btnSearch = new JButton("Tìm");
-        btnSearch.setPreferredSize(new Dimension(70,36));
-
         JButton btnAdd = createBtn("Thêm","#0d6efd","➕ ");
         JButton btnEdit = createBtn("Sửa","#ffc107","📝 ");
         JButton btnDelete = createBtn("Xóa","#dc3545","🗑 ");
-        JButton btnRefresh = new JButton("Tải lại");
+        JButton btnRefresh = new JButton("🔄 Tải lại");
 
-        btnRefresh.setPreferredSize(new Dimension(90,36));
-        btnRefresh.putClientProperty(FlatClientProperties.STYLE,"arc:10");
+        btnRefresh.setPreferredSize(new Dimension(100,38));
+        btnRefresh.putClientProperty(FlatClientProperties.STYLE,"arc: 10");
 
-        btnSearch.addActionListener(e -> onSearch());
         btnAdd.addActionListener(e -> onAdd());
         btnEdit.addActionListener(e -> onEdit());
         btnDelete.addActionListener(e -> onDelete());
@@ -117,8 +121,6 @@ public class PaymentPanel extends JPanel {
             loadTableAll();
         });
 
-        bar.add(txtSearch);
-        bar.add(btnSearch);
         bar.add(btnRefresh);
         bar.add(btnAdd);
         bar.add(btnEdit);
@@ -566,3 +568,4 @@ public class PaymentPanel extends JPanel {
     }
 
 }
+

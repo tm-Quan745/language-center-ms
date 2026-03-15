@@ -89,9 +89,9 @@ public class LcmsStaffPanel extends JPanel {
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         right.setOpaque(false);
 
-        JButton btnAdd = createActionButton("Thêm mới", "#198754"); // Green
-        JButton btnEdit = createActionButton("Chỉnh sửa", "#ffc107"); // Yellow
-        JButton btnDelete = createActionButton("Xóa bỏ", "#dc3545"); // Red
+        JButton btnAdd = createActionButton(" ➕  Thêm mới", "#198754"); // Green
+        JButton btnEdit = createActionButton("📝 Chỉnh sửa", "#ffc107"); // Yellow
+        JButton btnDelete = createActionButton("🗑️ Xóa bỏ", "#dc3545"); // Red
         JButton btnRefresh = new JButton("🔄 Làm mới");
         btnRefresh.setPreferredSize(new Dimension(110, 40));
 

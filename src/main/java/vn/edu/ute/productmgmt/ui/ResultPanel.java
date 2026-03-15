@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Panel quản lý kết quả học tập, chuẩn hóa theo ClassPanel
+ * Panel quản lý kết quả học tập, chuẩn hóa theo NotificationPanel
  */
 public class ResultPanel extends JPanel {
 
@@ -51,16 +51,32 @@ public class ResultPanel extends JPanel {
     }
 
     private void buildUI() {
-        JPanel header = new JPanel(new BorderLayout());
-        header.setOpaque(false);
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
 
-        JLabel title = new JLabel("Quản lý Kết quả học tập");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        // LEFT: class selector + load
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        left.setOpaque(false);
 
-        header.add(title, BorderLayout.WEST);
-        header.add(buildActionBar(), BorderLayout.EAST);
+        cboClass = new JComboBox<>();
+        cboClass.setPreferredSize(new Dimension(250, 36));
+        cboClass.putClientProperty(FlatClientProperties.STYLE, "arc:10");
 
-        add(header, BorderLayout.NORTH);
+        JButton btnLoad = new JButton("Tải danh sách");
+        btnLoad.putClientProperty(FlatClientProperties.STYLE, "background:#0d6efd;foreground:#fff;arc:10;borderWidth:0");
+        btnLoad.setPreferredSize(new Dimension(140, 36));
+        btnLoad.addActionListener(e -> loadStudents());
+
+        left.add(new JLabel("Lớp:"));
+        left.add(cboClass);
+        left.add(btnLoad);
+
+        headerPanel.add(left, BorderLayout.WEST);
+
+        // RIGHT: action bar (save, refresh)
+        headerPanel.add(buildActionBar(), BorderLayout.EAST);
+
+        add(headerPanel, BorderLayout.NORTH);
 
         add(buildTableArea(), BorderLayout.CENTER);
 
@@ -79,27 +95,18 @@ public class ResultPanel extends JPanel {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         bar.setOpaque(false);
 
-        cboClass = new JComboBox<>();
-        cboClass.setPreferredSize(new Dimension(250, 36));
-        cboClass.putClientProperty(FlatClientProperties.STYLE, "arc:10");
-
-        JButton btnLoad = createBtn("Tải danh sách", "#0d6efd", "📥 ");
         JButton btnSave = createBtn("Lưu kết quả", "#198754", "💾 ");
-        JButton btnRefresh = new JButton("Tải lại");
+        JButton btnRefresh = new JButton("🔄 Tải lại");
 
-        btnRefresh.setPreferredSize(new Dimension(90, 36));
+        btnRefresh.setPreferredSize(new Dimension(100, 36));
         btnRefresh.putClientProperty(FlatClientProperties.STYLE, "arc:10");
 
-        btnLoad.addActionListener(e -> loadStudents());
         btnSave.addActionListener(e -> saveResults());
         btnRefresh.addActionListener(e -> {
             cboClass.setSelectedIndex(-1);
             tableModel.setData(new ArrayList<>());
         });
 
-        bar.add(new JLabel("Lớp:"));
-        bar.add(cboClass);
-        bar.add(btnLoad);
         bar.add(btnSave);
         bar.add(btnRefresh);
 
