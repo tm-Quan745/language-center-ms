@@ -50,9 +50,17 @@ public class ClassFormDialog extends JDialog {
 
         if (existing != null) {
             this.result = existing;
+
             cboCourse.setSelectedItem(existing.getCourse());
             cboTeacher.setSelectedItem(existing.getTeacher());
             cboBranch.setSelectedItem(existing.getBranch());
+
+            // LOAD ROOM ĐÚNG CHI NHÁNH
+            if(existing.getBranch() != null){
+                loadRoomsByBranch(existing.getBranch());
+                cboRoom.setSelectedItem(existing.getRoom());
+            }
+
             txtMaxStudent.setText(String.valueOf(existing.getMaxStudent()));
             spnStart.setValue(toDate(existing.getStartDate()));
             spnEnd.setValue(toDate(existing.getEndDate()));

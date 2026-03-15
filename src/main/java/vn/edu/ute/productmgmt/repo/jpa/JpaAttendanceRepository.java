@@ -3,6 +3,7 @@ package vn.edu.ute.productmgmt.repo.jpa;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import vn.edu.ute.productmgmt.model.Attendance;
+import vn.edu.ute.productmgmt.model.Student;
 import vn.edu.ute.productmgmt.model.TeachingClass;
 import vn.edu.ute.productmgmt.repo.AttendanceRepository;
 
@@ -55,6 +56,12 @@ public class JpaAttendanceRepository implements AttendanceRepository {
     @Override
     public Attendance save(Attendance attendance) {
         return null;
+    }
+
+    @Override
+    public Student getStudentById(EntityManager em, Long studentId) {
+        // Tìm sinh viên theo ID để phục vụ việc điểm danh
+        return em.find(Student.class, studentId);
     }
 
     @Override

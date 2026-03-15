@@ -21,18 +21,22 @@ public class ScheduleService {
         this.tx = tx;
     }
 
-    // =================================
-    // CREATE SCHEDULE
-    // =================================
+    // =========================
+    // CREATE
+    // =========================
     public void createSchedule(Schedule s) throws Exception {
 
         validate(s);
+
         tx.runInTransaction(em -> {
             scheduleRepo.insert(em, s);
             return null;
         });
     }
 
+    // =========================
+    // UPDATE
+    // =========================
     public void updateSchedule(Schedule s) throws Exception {
 
         validate(s);
@@ -43,15 +47,9 @@ public class ScheduleService {
         });
     }
 
-    public Schedule findById(Long id) {
-        EntityManager em = Jpa.em();
-        try {
-            return scheduleRepo.findById(em, id);
-        } finally {
-            em.close();
-        }
-    }
-
+    // =========================
+    // DELETE
+    // =========================
     public void deleteSchedule(Long id) throws Exception {
 
         tx.runInTransaction(em -> {
@@ -60,55 +58,99 @@ public class ScheduleService {
         });
     }
 
+    // =========================
+    // FIND BY ID
+    // =========================
+    public Schedule findById(Long id) {
+
+        EntityManager em = Jpa.em();
+
+        try {
+            return scheduleRepo.findById(em, id);
+        }
+        finally {
+            em.close();
+        }
+    }
+
+    // =========================
+    // ADMIN: FIND ALL
+    // =========================
     public List<Schedule> findAll() {
 
         EntityManager em = Jpa.em();
+
         try {
             return scheduleRepo.findAll(em);
-        } finally {
+        }
+        finally {
             em.close();
         }
     }
 
-    /**
-     * Lấy lịch học của các lớp do một giáo viên phụ trách.
-     */
+    // =========================
+    // TEACHER: FIND BY TEACHER
+    // =========================
     public List<Schedule> findByTeacher(Long teacherId) {
-        if (teacherId == null) {
+
+        if (teacherId == null)
             throw new IllegalArgumentException("teacherId không được null");
-        }
+
         EntityManager em = Jpa.em();
+
         try {
             return scheduleRepo.findByTeacherId(em, teacherId);
-        } finally {
+        }
+        finally {
             em.close();
         }
     }
 
-    // =================================
+    // =========================
+    // STUDENT: FIND BY STUDENT
+    // =========================
+    public List<Schedule> findByStudent(Long studentId) {
+
+        if (studentId == null)
+            throw new IllegalArgumentException("studentId không được null");
+
+        EntityManager em = Jpa.em();
+
+        try {
+            return scheduleRepo.findByStudentId(em, studentId);
+        }
+        finally {
+            em.close();
+        }
+    }
+
+    // =========================
     // FIND BY CLASS
-    // =================================
+    // =========================
     public List<Schedule> findByClass(Long classId) {
 
         EntityManager em = Jpa.em();
+
         try {
             return scheduleRepo.findByClass(em, classId);
-        } finally {
+        }
+        finally {
             em.close();
         }
     }
 
-    // =================================
+    // =========================
     // BUSINESS VALIDATION
-    // =================================
+    // =========================
     private void validate(Schedule s) {
 
         if (s.getTeachingClass() == null)
             throw new IllegalArgumentException("Phải chọn lớp");
 
         LocalDate study = s.getStudyDate();
+
         if (study == null)
-            throw new IllegalArgumentException("Phải nhập ngày học (study_date)");
+            throw new IllegalArgumentException("Phải nhập ngày học");
 
         LocalTime start = s.getStartTime();
         LocalTime end = s.getEndTime();

@@ -49,6 +49,20 @@ public class JpaScheduleRepository implements ScheduleRepository {
     }
 
     @Override
+    public List<Schedule> findByStudentId(EntityManager em, Long studentId) {
+        return em.createQuery(
+                        "SELECT DISTINCT s FROM Schedule s " +
+                                "JOIN FETCH s.teachingClass tc " + // Lấy thông tin lớp học
+                                "LEFT JOIN FETCH s.room " +        // Lấy thông tin phòng học
+                                "JOIN Enrollment e ON e.teachingClass.id = tc.id " + // Kết nối với bảng đăng ký
+                                "WHERE e.student.id = :studentId " +
+                                "ORDER BY s.studyDate, s.startTime",
+                        Schedule.class)
+                .setParameter("studentId", studentId)
+                .getResultList();
+    }
+
+    @Override
     public Schedule findById(EntityManager em, Long id) {
         return em.find(Schedule.class, id);
     }

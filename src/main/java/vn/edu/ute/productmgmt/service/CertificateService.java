@@ -59,6 +59,16 @@ public class CertificateService {
         }
     }
 
+    public List<Certificate> findByStudent(Long studentId) {
+        EntityManager em = Jpa.em();
+        try {
+            return certificateRepo.findByStudentId(em, studentId);
+        } finally {
+            em.close();
+        }
+    }
+
+
     private void validate(Certificate c) {
         if (c == null) {
             throw new IllegalArgumentException("Chứng chỉ không được null");

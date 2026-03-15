@@ -1,461 +1,400 @@
 package vn.edu.ute.productmgmt.ui;
 
 import com.formdev.flatlaf.FlatClientProperties;
-import vn.edu.ute.productmgmt.model.Certificate;
-import vn.edu.ute.productmgmt.model.Student;
-import vn.edu.ute.productmgmt.model.TeachingClass;
-import vn.edu.ute.productmgmt.service.CertificateService;
-import vn.edu.ute.productmgmt.service.ClassService;
-import vn.edu.ute.productmgmt.service.StudentService;
+import vn.edu.ute.productmgmt.model.*;
+import vn.edu.ute.productmgmt.model.enums.UserRole;
+import vn.edu.ute.productmgmt.service.*;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Panel quản lý chứng chỉ, chuẩn hóa theo NotificationPanel
- */
 public class CertificatePanel extends JPanel {
 
     private final CertificateService certificateService;
     private final StudentService studentService;
     private final ClassService classService;
 
-    private final JTextField txtSearch = new JTextField(18);
+    private final UserRole currentRole;
+    private final Long studentId;
+    private final Long teacherId;
 
-    private final JLabel lblInfo = new JLabel(" ");
+    private final JTable table = new JTable();
     private final CertificateTableModel tableModel = new CertificateTableModel();
-    private final JTable table = new JTable(tableModel);
-    private Certificate selectedCertificate;
 
-    public CertificatePanel(CertificateService certificateService, StudentService studentService, ClassService classService) {
+    private final JTextField txtSearch = new JTextField(20);
+    private final JLabel lblInfo = new JLabel(" ");
+
+    private Certificate selected;
+
+
+    public CertificatePanel(
+            CertificateService certificateService,
+            StudentService studentService,
+            ClassService classService,
+            UserAccount currentUser
+    ) {
+
         this.certificateService = certificateService;
         this.studentService = studentService;
         this.classService = classService;
 
-        setLayout(new BorderLayout(20, 20));
+        this.currentRole = currentUser.getRole();
+
+        this.studentId =
+                currentUser.getStudent() != null ?
+                        currentUser.getStudent().getId() : null;
+
+        this.teacherId =
+                currentUser.getTeacher() != null ?
+                        currentUser.getTeacher().getId() : null;
+
+        setLayout(new BorderLayout(20,20));
+        setBorder(new EmptyBorder(10,10,10,10));
         setOpaque(false);
-        setBorder(new EmptyBorder(10, 10, 10, 10));
 
         buildUI();
-
-        table.getSelectionModel().addListSelectionListener(e -> {
-            if (e.getValueIsAdjusting()) return;
-            onTableSelection();
-        });
-
         loadTable();
+
+        table.getSelectionModel().addListSelectionListener(e->{
+            if(e.getValueIsAdjusting()) return;
+            onSelect();
+        });
     }
 
-    private void buildUI() {
+    private CertificateFormDialog.CertificateFormData certificateToFormData(Certificate c) {
 
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setOpaque(false);
+        CertificateFormDialog.CertificateFormData data =
+                new CertificateFormDialog.CertificateFormData();
 
-        // LEFT: search area
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        left.setOpaque(false);
-        txtSearch.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Tìm tên chứng chỉ hoặc tên học viên...");
-        txtSearch.setPreferredSize(new Dimension(300, 40));
-        txtSearch.putClientProperty(FlatClientProperties.TEXT_FIELD_LEADING_ICON, new JLabel(" 🔍 "));
-        txtSearch.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
+        if (c.getStudent() != null)
+            data.setStudentId(c.getStudent().getId().toString());
 
-        JButton btnSearch = new JButton("Tìm kiếm");
-        btnSearch.setPreferredSize(new Dimension(100, 40));
-        btnSearch.putClientProperty(FlatClientProperties.STYLE, "background: #0d6efd; foreground: #ffffff; arc: 12");
-        btnSearch.addActionListener(e -> onSearch());
+        if (c.getTeachingClass() != null)
+            data.setClassId(c.getTeachingClass().getId().toString());
 
-        left.add(txtSearch);
-        left.add(Box.createHorizontalStrut(10));
-        left.add(btnSearch);
+        data.setCertName(c.getCertName());
 
-        headerPanel.add(left, BorderLayout.WEST);
-        headerPanel.add(buildActionBar(), BorderLayout.EAST);
+        if (c.getIssueDate() != null)
+            data.setIssueDate(c.getIssueDate().toString());
 
-        add(headerPanel, BorderLayout.NORTH);
+        data.setSerialNo(c.getSerialNo());
 
-        add(buildTableArea(), BorderLayout.CENTER);
+        return data;
+    }
 
-        JPanel statusBar = new JPanel(new BorderLayout());
-        statusBar.setOpaque(false);
+    private void buildUI(){
+
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+
+        header.add(buildSearch(),BorderLayout.WEST);
+        header.add(buildActionBar(),BorderLayout.EAST);
+
+        add(header,BorderLayout.NORTH);
+
+        table.setModel(tableModel);
+        table.setRowHeight(42);
+
+        add(new JScrollPane(table),BorderLayout.CENTER);
 
         lblInfo.setForeground(Color.GRAY);
-        lblInfo.setFont(new Font("Segoe UI", Font.ITALIC, 13));
-
-        statusBar.add(lblInfo, BorderLayout.WEST);
-
-        add(statusBar, BorderLayout.SOUTH);
+        add(lblInfo,BorderLayout.SOUTH);
     }
 
-    private JComponent buildActionBar() {
+    private JComponent buildSearch(){
 
-        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT,10,0));
+        p.setOpaque(false);
+
+        txtSearch.putClientProperty(
+                FlatClientProperties.PLACEHOLDER_TEXT,
+                "Tìm chứng chỉ..."
+        );
+
+        txtSearch.setPreferredSize(new Dimension(250,36));
+
+        JButton btn = new JButton("Tìm");
+
+        btn.addActionListener(e->onSearch());
+
+        p.add(txtSearch);
+        p.add(btn);
+
+        return p;
+    }
+
+    private JComponent buildActionBar(){
+
+        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT,10,0));
         bar.setOpaque(false);
 
-        JButton btnAdd = createBtn("Thêm", "#0d6efd", "➕ ");
-        JButton btnEdit = createBtn("Sửa", "#ffc107", "📝 ");
-        JButton btnDelete = createBtn("Xóa", "#dc3545", "🗑 ");
         JButton btnRefresh = new JButton("🔄 Tải lại");
-
-        btnRefresh.setPreferredSize(new Dimension(100, 38));
-        btnRefresh.putClientProperty(FlatClientProperties.STYLE, "arc: 10");
-
-        btnAdd.addActionListener(e -> onAdd());
-        btnEdit.addActionListener(e -> onSave());
-        btnDelete.addActionListener(e -> onDelete());
-        btnRefresh.addActionListener(e -> loadTable());
+        btnRefresh.addActionListener(e->loadTable());
 
         bar.add(btnRefresh);
-        bar.add(btnAdd);
-        bar.add(btnEdit);
-        bar.add(btnDelete);
+
+        if(currentRole != UserRole.Student){
+
+            JButton btnAdd = new JButton("➕ Thêm");
+            JButton btnEdit = new JButton("📝 Sửa");
+
+            btnAdd.addActionListener(e->onAdd());
+            btnEdit.addActionListener(e->onEdit());
+
+            bar.add(btnAdd);
+            bar.add(btnEdit);
+
+            if(currentRole == UserRole.Admin){
+
+                JButton btnDelete = new JButton("🗑 Xóa");
+                btnDelete.addActionListener(e->onDelete());
+                bar.add(btnDelete);
+
+            }
+        }
 
         return bar;
     }
 
-    private JButton createBtn(String text, String color, String icon) {
+    private void loadTable(){
 
-        JButton btn = new JButton(icon + text);
+        try{
 
-        btn.setPreferredSize(new Dimension(110, 36));
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            List<Certificate> list;
 
-        String fg = color.equals("#ffc107") ? "#000000" : "#ffffff";
+            switch(currentRole){
 
-        btn.putClientProperty(FlatClientProperties.STYLE,
-                "background:" + color +
-                        ";foreground:" + fg +
-                        ";arc:10;borderWidth:0");
+                case Admin ->
+                        list = certificateService.findAll();
 
-        return btn;
-    }
+                case Staff ->
+                        list = certificateService.findAll();
 
-    private JComponent buildTableArea() {
+                case Teacher ->
+                        list = certificateService.findAll();
 
-        JScrollPane scroll = new JScrollPane(table);
+                case Student ->
+                        list = certificateService.findByStudent(studentId);
 
-        scroll.putClientProperty(FlatClientProperties.STYLE, "arc:15");
-        scroll.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230)));
-
-        table.setRowHeight(45);
-        table.setShowVerticalLines(false);
-
-        table.getTableHeader().setFont(new Font("Segoe UI Semibold", Font.PLAIN, 14));
-        table.getTableHeader().setPreferredSize(new Dimension(0, 45));
-
-        return scroll;
-    }
-
-    private void loadTable() {
-
-        try {
-
-            List<Certificate> list = certificateService.findAll();
+                default ->
+                        list = new ArrayList<>();
+            }
 
             tableModel.setData(list);
 
-            lblInfo.setText("Tổng số: " + list.size() + " chứng chỉ");
+            lblInfo.setText("Tổng: "+list.size()+" chứng chỉ");
 
-            table.clearSelection();
+            selected = null;
 
-            selectedCertificate = null;
+        }catch(Exception ex){
 
-        } catch (Exception ex) {
-
-            JOptionPane.showMessageDialog(this, "Lỗi tải dữ liệu: " + ex.getMessage());
-
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Lỗi tải dữ liệu: "+ex.getMessage()
+            );
         }
     }
 
-    private void onTableSelection() {
+    private void onSelect(){
 
         int row = table.getSelectedRow();
 
-        if (row < 0) {
-
-            selectedCertificate = null;
-
+        if(row<0){
+            selected=null;
             return;
-
         }
 
-        selectedCertificate = tableModel.getCertificateAt(row);
-
+        selected = tableModel.get(row);
     }
 
-    private void onAdd() {
+    private void onSearch(){
+
+        String kw = txtSearch.getText().trim().toLowerCase();
+
+        if(kw.isEmpty()){
+            loadTable();
+            return;
+        }
+
+        List<Certificate> filtered = new ArrayList<>();
+
+        for(Certificate c:tableModel.data){
+
+            String name =
+                    c.getCertName()!=null ?
+                            c.getCertName().toLowerCase():"";
+
+            String student =
+                    c.getStudent()!=null ?
+                            c.getStudent().getFullName().toLowerCase():"";
+
+            if(name.contains(kw) || student.contains(kw)){
+                filtered.add(c);
+            }
+        }
+
+        tableModel.setData(filtered);
+        lblInfo.setText("Tìm thấy "+filtered.size());
+    }
+
+    private void onAdd(){
 
         List<Student> students = studentService.findAll();
         List<TeachingClass> classes = classService.findAll();
 
-        CertificateFormDialog dialog = new CertificateFormDialog(
-                SwingUtilities.getWindowAncestor(this),
-                null,
-                students,
-                classes
-        );
+        CertificateFormDialog dialog =
+                new CertificateFormDialog(
+                        SwingUtilities.getWindowAncestor(this),
+                        null,
+                        students,
+                        classes
+                );
 
         dialog.setVisible(true);
 
-        if (dialog.isSaved()) {
+        if(!dialog.isSaved()) return;
 
-            try {
+        try{
 
-                CertificateFormDialog.CertificateFormData data = dialog.getResult();
-                Certificate c = formDataToCertificate(data, null);
-                if (c == null) return;
+            Certificate c = dialog.toCertificate();
+            certificateService.create(c);
 
-                certificateService.create(c);
+            loadTable();
 
-                loadTable();
+        }catch(Exception ex){
 
-            } catch (Exception ex) {
-
-                JOptionPane.showMessageDialog(this, "Lỗi thêm chứng chỉ: " + ex.getMessage());
-
-            }
-
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Lỗi thêm: "+ex.getMessage()
+            );
         }
-
     }
 
-    private void onSave() {
+    private void onEdit(){
 
-        if (selectedCertificate == null) {
+        if(selected==null){
 
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn chứng chỉ để sửa");
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Chọn chứng chỉ cần sửa"
+            );
 
             return;
-
         }
-
-        CertificateFormDialog.CertificateFormData existing = certificateToFormData(selectedCertificate);
 
         List<Student> students = studentService.findAll();
         List<TeachingClass> classes = classService.findAll();
 
-        CertificateFormDialog dialog = new CertificateFormDialog(
-                SwingUtilities.getWindowAncestor(this),
-                existing,
-                students,
-                classes
-        );
+        CertificateFormDialog.CertificateFormData existing =
+                certificateToFormData(selected);
+
+        CertificateFormDialog dialog =
+                new CertificateFormDialog(
+                        SwingUtilities.getWindowAncestor(this),
+                        existing,
+                        students,
+                        classes
+                );
 
         dialog.setVisible(true);
 
-        if (dialog.isSaved()) {
+        if(!dialog.isSaved()) return;
 
-            try {
+        try{
 
-                CertificateFormDialog.CertificateFormData data = dialog.getResult();
-                Certificate c = formDataToCertificate(data, selectedCertificate.getId());
-                if (c == null) return;
+            Certificate c = dialog.toCertificate();
+            c.setId(selected.getId());
 
-                certificateService.update(c);
+            certificateService.update(c);
 
-                loadTable();
+            loadTable();
 
-            } catch (Exception ex) {
+        }catch(Exception ex){
 
-                JOptionPane.showMessageDialog(this, "Lỗi cập nhật: " + ex.getMessage());
-
-            }
-
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Lỗi cập nhật: "+ex.getMessage()
+            );
         }
-
     }
 
-    private void onDelete() {
+    private void onDelete(){
 
-        if (selectedCertificate == null) return;
+        if(selected==null) return;
 
         int ok = JOptionPane.showConfirmDialog(
                 this,
-                "Xóa chứng chỉ này?",
+                "Xóa chứng chỉ?",
                 "Xác nhận",
                 JOptionPane.YES_NO_OPTION
         );
 
-        if (ok == JOptionPane.YES_OPTION) {
+        if(ok!=JOptionPane.YES_OPTION) return;
 
-            try {
+        try{
 
-                certificateService.delete(selectedCertificate.getId());
+            certificateService.delete(selected.getId());
 
-                loadTable();
-
-            } catch (Exception ex) {
-
-                JOptionPane.showMessageDialog(this, "Lỗi xóa: " + ex.getMessage());
-
-            }
-
-        }
-
-    }
-
-    private void onSearch() {
-        String kw = txtSearch.getText() != null ? txtSearch.getText().trim().toLowerCase() : "";
-        if (kw.isEmpty()) {
             loadTable();
-            return;
-        }
-        List<Certificate> all = certificateService.findAll();
-        List<Certificate> filtered = new ArrayList<>();
-        for (Certificate c : all) {
-            String certName = c.getCertName() != null ? c.getCertName().toLowerCase() : "";
-            String studentName = c.getStudent() != null && c.getStudent().getFullName() != null ? c.getStudent().getFullName().toLowerCase() : "";
-            if (certName.contains(kw) || studentName.contains(kw)) {
-                filtered.add(c);
-            }
-        }
-        tableModel.setData(filtered);
-        lblInfo.setText("Tìm thấy: " + filtered.size() + " kết quả");
-    }
 
-    private CertificateFormDialog.CertificateFormData certificateToFormData(Certificate c) {
-        CertificateFormDialog.CertificateFormData data = new CertificateFormDialog.CertificateFormData();
-        data.setStudentId(c.getStudent() != null && c.getStudent().getId() != null ? c.getStudent().getId().toString() : "");
-        data.setClassId(c.getTeachingClass() != null && c.getTeachingClass().getId() != null ? c.getTeachingClass().getId().toString() : null);
-        data.setCertName(c.getCertName() != null ? c.getCertName() : "");
-        data.setIssueDate(c.getIssueDate() != null ? c.getIssueDate().toString() : "");
-        data.setSerialNo(c.getSerialNo() != null ? c.getSerialNo() : "");
-        return data;
-    }
+        }catch(Exception ex){
 
-    private Certificate formDataToCertificate(CertificateFormDialog.CertificateFormData data, Long keepId) {
-        String studentIdStr = data.getStudentId() != null ? data.getStudentId().trim() : "";
-        if (studentIdStr.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn học viên.", "Lỗi", JOptionPane.WARNING_MESSAGE);
-            return null;
-        }
-        String certName = data.getCertName() != null ? data.getCertName().trim() : "";
-        if (certName.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Tên chứng chỉ không được để trống.", "Lỗi", JOptionPane.WARNING_MESSAGE);
-            return null;
-        }
-        LocalDate issueDate = parseDateOrToday(data.getIssueDate());
-        Long studentId = Long.parseLong(studentIdStr);
-        Student student;
-        try {
-            student = studentService.getById(studentId);
-        } catch (Exception ex) {
-            student = null;
-        }
-        if (student == null) {
-            JOptionPane.showMessageDialog(this, "Không tìm thấy học viên.", "Lỗi", JOptionPane.WARNING_MESSAGE);
-            return null;
-        }
-
-        Certificate cert = new Certificate();
-        if (keepId != null) cert.setId(keepId);
-        cert.setStudent(student);
-        cert.setCertName(certName);
-        cert.setIssueDate(issueDate);
-        cert.setSerialNo(data.getSerialNo() != null && !data.getSerialNo().trim().isEmpty() ? data.getSerialNo().trim() : null);
-
-        String classIdStr = data.getClassId() != null ? data.getClassId().trim() : "";
-        if (!classIdStr.isEmpty()) {
-            try {
-                Long classId = Long.parseLong(classIdStr);
-                for (TeachingClass tc : classService.findAll()) {
-                    if (tc.getId() != null && tc.getId().equals(classId)) {
-                        cert.setTeachingClass(tc);
-                        break;
-                    }
-                }
-            } catch (Exception ignored) { }
-        } else {
-            cert.setTeachingClass(null);
-        }
-        return cert;
-    }
-
-    private LocalDate parseDateOrToday(String value) {
-        String v = value != null ? value.trim() : "";
-        if (v.isEmpty()) return LocalDate.now();
-        try {
-            return LocalDate.parse(v);
-        } catch (DateTimeParseException ex) {
-            throw new IllegalArgumentException("Ngày không hợp lệ. Định dạng: yyyy-MM-dd");
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Lỗi xóa: "+ex.getMessage()
+            );
         }
     }
 
-    private static class CertificateTableModel extends AbstractTableModel {
+    private static class CertificateTableModel extends AbstractTableModel{
 
-        private final String[] columns = {
-                "Tên chứng chỉ",
+        private final String[] columns={
+                "Chứng chỉ",
                 "Học viên",
                 "Lớp",
                 "Ngày cấp",
-                "Số seri"
+                "Serial"
         };
 
-        private List<Certificate> data = new ArrayList<>();
+        private List<Certificate> data=new ArrayList<>();
 
-        void setData(List<Certificate> data) {
-
-            this.data = data != null ? data : new ArrayList<>();
-
+        void setData(List<Certificate> d){
+            data=d;
             fireTableDataChanged();
-
         }
 
-        Certificate getCertificateAt(int r) {
-
-            return (r >= 0 && r < data.size()) ? data.get(r) : null;
-
+        Certificate get(int r){
+            return data.get(r);
         }
 
-        @Override
-        public int getRowCount() {
+        public int getRowCount(){return data.size();}
 
-            return data.size();
+        public int getColumnCount(){return columns.length;}
 
-        }
+        public String getColumnName(int c){return columns[c];}
 
-        @Override
-        public int getColumnCount() {
+        public Object getValueAt(int r,int c){
 
-            return columns.length;
+            Certificate cert=data.get(r);
 
-        }
+            return switch(c){
 
-        @Override
-        public String getColumnName(int c) {
-
-            return columns[c];
-
-        }
-
-        @Override
-        public Object getValueAt(int r, int c) {
-
-            Certificate cert = data.get(r);
-
-            return switch (c) {
-
-                case 0 -> cert.getCertName() != null ? cert.getCertName() : "";
-
-                case 1 -> cert.getStudent() != null ? cert.getStudent().getFullName() : "";
-
-                case 2 -> cert.getTeachingClass() != null ? cert.getTeachingClass().getClassName() : "";
-
-                case 3 -> cert.getIssueDate() != null ? cert.getIssueDate().toString() : "";
-
-                case 4 -> cert.getSerialNo() != null ? cert.getSerialNo() : "";
+                case 0 -> cert.getCertName();
+                case 1 -> cert.getStudent()!=null ?
+                        cert.getStudent().getFullName():"";
+                case 2 -> cert.getTeachingClass()!=null ?
+                        cert.getTeachingClass().getClassName():"";
+                case 3 -> cert.getIssueDate()!=null ?
+                        cert.getIssueDate().toString():"";
+                case 4 -> cert.getSerialNo();
 
                 default -> "";
-
             };
-
         }
-
     }
-
 }

@@ -32,6 +32,18 @@ public class JpaCertificateRepository implements CertificateRepository {
     }
 
     @Override
+    public List<Certificate> findByStudentId(EntityManager em, Long studentId) {
+        return em.createQuery(
+                "SELECT c FROM Certificate c " +
+                        "LEFT JOIN FETCH c.student " +
+                        "LEFT JOIN FETCH c.teachingClass " +
+                        "WHERE c.student.id = :studentId " +
+                        "ORDER BY c.issueDate DESC, c.id",
+                Certificate.class
+        ).setParameter("studentId", studentId).getResultList();
+    }
+
+    @Override
     public List<Certificate> findAll(EntityManager em) {
         return em.createQuery(
                 "SELECT c FROM Certificate c " +

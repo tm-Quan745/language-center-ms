@@ -15,5 +15,7 @@ public interface CertificateRepository {
 
     Certificate findById(EntityManager em, Long id);
 
+    List<Certificate> findByStudentId(EntityManager em, Long studentId);
+
     List<Certificate> findAll(EntityManager em);
 }

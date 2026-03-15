@@ -18,6 +18,8 @@ public interface ScheduleRepository {
      */
     List<Schedule> findByTeacherId(EntityManager em, Long teacherId);
 
+    List<Schedule> findByStudentId(EntityManager em, Long branchId);
+
     Schedule findById(EntityManager em, Long id);
 
     void update(EntityManager em, Schedule schedule);

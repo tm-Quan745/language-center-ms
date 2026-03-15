@@ -2,6 +2,7 @@ package vn.edu.ute.productmgmt.repo;
 
 import jakarta.persistence.EntityManager;
 import vn.edu.ute.productmgmt.model.Attendance;
+import vn.edu.ute.productmgmt.model.Student;
 import vn.edu.ute.productmgmt.model.TeachingClass;
 
 import java.time.LocalDate;
@@ -21,6 +22,9 @@ public interface AttendanceRepository {
                                  TeachingClass teachingClass);
 
     Attendance save(Attendance attendance);
+
+    Student getStudentById(EntityManager em,Long studentId);
+
 
     List<Attendance> findByClassAndDate(TeachingClass teachingClass, LocalDate date);
 

@@ -275,7 +275,7 @@ public class LcmsMainFrame extends JFrame {
         contentPanel.add(new RoomPanel(roomService, branchService), CARD_ROOM);
         contentPanel.add(new BranchPanel(branchService), CARD_BRANCH);
         contentPanel.add(new UserAccountPanel(), CARD_ACCOUNT);
-        contentPanel.add(new CertificatePanel(certificateService, studentService, classService), CARD_CERTIFICATE);
+        contentPanel.add(new CertificatePanel(certificateService, studentService, classService,currentUser), CARD_CERTIFICATE);
         contentPanel.add(new LcmsStaffPanel(staffService), CARD_STAFF);
         contentPanel.add(new ClassPanel(classService, courseService, teacherService, roomService, branchService, currentUser), CARD_CLASS);
         contentPanel.add(new SchedulePanel(scheduleService, classService, roomService, currentUser), CARD_SCHEDULE);
@@ -287,6 +287,7 @@ public class LcmsMainFrame extends JFrame {
         contentPanel.add(new NotificationPanel(notificationService), CARD_NOTIFICATION);
         contentPanel.add(new AttendancePanel(attendanceService, classService, currentUser), CARD_ATTENDANCE);
         contentPanel.add(new ResultPanel(resultService, classService, attendanceService, currentUser), CARD_RESULT);
+//        contentPanel.add(new StudentClassPanel(classService,currentUser),CARD_STUDENTCLASS);
     }
 
     private DefaultMutableTreeNode buildMenuTree() {

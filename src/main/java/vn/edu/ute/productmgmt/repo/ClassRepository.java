@@ -21,6 +21,8 @@ public interface ClassRepository {
 
     List<TeachingClass> findByStatus(EntityManager em, String status);
 
+    List<TeachingClass> findByStudentId(EntityManager em, Long StudentId);
+
     void update(EntityManager em, TeachingClass teachingClass);
 
     void delete(EntityManager em, Long id);

@@ -49,6 +49,17 @@ public class AttendanceService {
         }
     }
 
+    public Student getStudentById(Long studentId) {
+
+        try {
+            return txManager.runInTransaction(em ->
+                    attendanceRepo.getStudentById(em, studentId)
+            );
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     // lưu hàng loạt điểm danh (upsert theo student + class + date)
     public void saveAttendanceBatch(List<Attendance> list) {
 

@@ -3,6 +3,7 @@ package vn.edu.ute.productmgmt.ui;
 import com.formdev.flatlaf.FlatClientProperties;
 import vn.edu.ute.productmgmt.model.Student;
 import vn.edu.ute.productmgmt.model.TeachingClass;
+import vn.edu.ute.productmgmt.model.Certificate;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -243,6 +244,42 @@ public class CertificateFormDialog extends JDialog {
 
     public CertificateFormData getResult() {
         return result;
+
+    }
+
+    public Certificate toCertificate() {
+
+        if (result == null) return null;
+
+        Certificate cert = new Certificate();
+
+        // student
+        if (result.getStudentId() != null && !result.getStudentId().isBlank()) {
+
+            Student s = new Student();
+            s.setId(Long.parseLong(result.getStudentId()));
+
+            cert.setStudent(s);
+        }
+
+        // class
+        if (result.getClassId() != null && !result.getClassId().isBlank()) {
+
+            TeachingClass tc = new TeachingClass();
+            tc.setId(Long.parseLong(result.getClassId()));
+
+            cert.setTeachingClass(tc);
+        }
+
+        cert.setCertName(result.getCertName());
+
+        if (result.getIssueDate() != null && !result.getIssueDate().isBlank()) {
+            cert.setIssueDate(LocalDate.parse(result.getIssueDate()));
+        }
+
+        cert.setSerialNo(result.getSerialNo());
+
+        return cert;
     }
 
     /**

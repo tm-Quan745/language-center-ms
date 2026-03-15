@@ -106,6 +106,15 @@ public class ClassService {
         }
     }
 
+    public List<TeachingClass> findByStudent(Long studentId) {
+        EntityManager em = Jpa.em();
+        try {
+            return classRepo.findByStudentId(em, studentId);
+        } finally {
+            em.close();
+        }
+    }
+
     // =============================
     // VALIDATION BUSINESS RULE
     // =============================

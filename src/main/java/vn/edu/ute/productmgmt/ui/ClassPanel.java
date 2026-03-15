@@ -28,26 +28,37 @@ public class ClassPanel extends JPanel {
     private final JTable table = new JTable(tableModel);
 
     private TeachingClass selectedClass;
-    /** Nếu khác null và user là giáo viên thì chỉ hiển thị các lớp của giáo viên này. */
-    private final Long currentTeacherId;
-    private final UserRole currentUserRole;
 
-    public ClassPanel(ClassService classService,
-                      CourseService courseService,
-                      TeacherService teacherService,
-                      RoomService roomService,
-                      BranchService branchService,
-                      UserAccount currentUser) {
+    private final UserRole currentUserRole;
+    private final Long currentTeacherId;
+    private final Long currentStudentId;
+
+    public ClassPanel(
+            ClassService classService,
+            CourseService courseService,
+            TeacherService teacherService,
+            RoomService roomService,
+            BranchService branchService,
+            UserAccount currentUser
+    ) {
 
         this.classService = classService;
         this.courseService = courseService;
         this.teacherService = teacherService;
         this.roomService = roomService;
         this.branchService = branchService;
+
         this.currentUserRole = currentUser != null ? currentUser.getRole() : null;
-        this.currentTeacherId = (currentUserRole == UserRole.Teacher && currentUser.getTeacher() != null)
-                ? currentUser.getTeacher().getId()
-                : null;
+
+        this.currentTeacherId =
+                (currentUserRole == UserRole.Teacher && currentUser.getTeacher() != null)
+                        ? currentUser.getTeacher().getId()
+                        : null;
+
+        this.currentStudentId =
+                (currentUserRole == UserRole.Student && currentUser.getStudent() != null)
+                        ? currentUser.getStudent().getId()
+                        : null;
 
         setLayout(new BorderLayout(20,20));
         setOpaque(false);
@@ -60,71 +71,93 @@ public class ClassPanel extends JPanel {
             onTableSelection();
         });
 
-        loadTableAll();
+        loadTableData();
     }
 
-    private void buildUI() {
+    private void buildUI(){
 
-        // Follow NotificationPanel style: header with left search and right action bar
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setOpaque(false);
 
-        // Left: search field + button
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT,0,0));
         left.setOpaque(false);
-        txtSearch.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Tìm lớp học...");
-        txtSearch.setPreferredSize(new Dimension(300, 40));
-        txtSearch.putClientProperty(FlatClientProperties.TEXT_FIELD_LEADING_ICON, new JLabel(" 🔍 "));
-        txtSearch.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
+
+        txtSearch.putClientProperty(
+                FlatClientProperties.PLACEHOLDER_TEXT,
+                "Tìm lớp học..."
+        );
+
+        txtSearch.setPreferredSize(new Dimension(300,40));
+
+        txtSearch.putClientProperty(
+                FlatClientProperties.TEXT_FIELD_LEADING_ICON,
+                new JLabel(" 🔍 ")
+        );
+
+        txtSearch.putClientProperty(
+                FlatClientProperties.STYLE,
+                "arc:12"
+        );
 
         JButton btnSearch = new JButton("Tìm kiếm");
-        btnSearch.setPreferredSize(new Dimension(100, 40));
-        btnSearch.putClientProperty(FlatClientProperties.STYLE, "background: #0d6efd; foreground: #ffffff; arc: 12");
+
+        btnSearch.setPreferredSize(new Dimension(110,40));
+
+        btnSearch.putClientProperty(
+                FlatClientProperties.STYLE,
+                "background:#0d6efd; foreground:#ffffff; arc:12"
+        );
+
         btnSearch.addActionListener(e -> onSearch());
 
         left.add(txtSearch);
         left.add(Box.createHorizontalStrut(10));
         left.add(btnSearch);
 
-        headerPanel.add(left, BorderLayout.WEST);
-        headerPanel.add(buildActionBar(), BorderLayout.EAST);
+        headerPanel.add(left,BorderLayout.WEST);
+        headerPanel.add(buildActionBar(),BorderLayout.EAST);
 
-        add(headerPanel, BorderLayout.NORTH);
-
-        add(buildTableArea(), BorderLayout.CENTER);
+        add(headerPanel,BorderLayout.NORTH);
+        add(buildTableArea(),BorderLayout.CENTER);
 
         JPanel statusBar = new JPanel(new BorderLayout());
         statusBar.setOpaque(false);
 
         lblInfo.setForeground(Color.GRAY);
-        lblInfo.setFont(new Font("Segoe UI", Font.ITALIC, 13));
+        lblInfo.setFont(new Font("Segoe UI",Font.ITALIC,13));
 
-        statusBar.add(lblInfo, BorderLayout.WEST);
+        statusBar.add(lblInfo,BorderLayout.WEST);
 
-        add(statusBar, BorderLayout.SOUTH);
+        add(statusBar,BorderLayout.SOUTH);
     }
 
-    private JComponent buildActionBar() {
+    private JComponent buildActionBar(){
 
-        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT,10,0));
         bar.setOpaque(false);
 
-        JButton btnAdd = createBtn("Thêm", "#0d6efd", "➕ ");
-        JButton btnEdit = createBtn("Sửa", "#ffc107", "📝 ");
-        JButton btnDelete = createBtn("Xóa", "#dc3545", "🗑 ");
         JButton btnRefresh = new JButton("🔄 Tải lại");
+        btnRefresh.setPreferredSize(new Dimension(110,38));
 
-        btnRefresh.setPreferredSize(new Dimension(100, 38));
-        btnRefresh.putClientProperty(FlatClientProperties.STYLE, "arc: 10");
+        btnRefresh.putClientProperty(
+                FlatClientProperties.STYLE,
+                "arc:10"
+        );
 
-        btnAdd.addActionListener(e -> onAdd());
-        btnEdit.addActionListener(e -> onEdit());
-        btnDelete.addActionListener(e -> onDelete());
-        btnRefresh.addActionListener(e -> loadTableAll());
+        btnRefresh.addActionListener(e -> loadTableData());
 
         bar.add(btnRefresh);
-        // Giáo viên chỉ xem, không được thao tác CRUD lớp
-        if (currentUserRole != UserRole.Teacher) {
+
+        if(currentUserRole == UserRole.Admin){
+
+            JButton btnAdd = createBtn("Thêm","#0d6efd","➕ ");
+            JButton btnEdit = createBtn("Sửa","#ffc107","📝 ");
+            JButton btnDelete = createBtn("Xóa","#dc3545","🗑 ");
+
+            btnAdd.addActionListener(e -> onAdd());
+            btnEdit.addActionListener(e -> onEdit());
+            btnDelete.addActionListener(e -> onDelete());
+
             bar.add(btnAdd);
             bar.add(btnEdit);
             bar.add(btnDelete);
@@ -133,56 +166,86 @@ public class ClassPanel extends JPanel {
         return bar;
     }
 
-    private JButton createBtn(String text, String colorHex, String icon) {
+    private JButton createBtn(String text,String colorHex,String icon){
+
         JButton btn = new JButton(icon + text);
-        btn.setPreferredSize(new Dimension(120, 38));
+
+        btn.setPreferredSize(new Dimension(120,38));
+
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
         String fg = colorHex.equals("#ffc107") ? "#000000" : "#ffffff";
-        btn.putClientProperty(FlatClientProperties.STYLE,
-                "background: " + colorHex + "; foreground: " + fg + "; arc: 10; borderWidth: 0");
+
+        btn.putClientProperty(
+                FlatClientProperties.STYLE,
+                "background:"+colorHex+"; foreground:"+fg+"; arc:10; borderWidth:0"
+        );
+
         return btn;
     }
-
 
     private JComponent buildTableArea(){
 
         JScrollPane scroll = new JScrollPane(table);
 
-        scroll.putClientProperty(FlatClientProperties.STYLE,"arc:15");
-        scroll.setBorder(BorderFactory.createLineBorder(new Color(230,230,230)));
+        scroll.putClientProperty(
+                FlatClientProperties.STYLE,
+                "arc:15"
+        );
+
+        scroll.setBorder(
+                BorderFactory.createLineBorder(new Color(230,230,230))
+        );
 
         table.setRowHeight(45);
         table.setShowVerticalLines(false);
 
-        table.getTableHeader().setFont(new Font("Segoe UI Semibold",Font.PLAIN,14));
-        table.getTableHeader().setPreferredSize(new Dimension(0,45));
+        table.getTableHeader().setFont(
+                new Font("Segoe UI Semibold",Font.PLAIN,14)
+        );
+
+        table.getTableHeader().setPreferredSize(
+                new Dimension(0,45)
+        );
 
         return scroll;
     }
 
-    private void loadTableAll() {
+    private void loadTableData(){
 
-        try {
+        try{
 
             List<TeachingClass> list;
-            if (currentTeacherId != null) {
-                // Giáo viên: chỉ xem các lớp của mình
+
+            if(currentUserRole == UserRole.Teacher){
+
                 list = classService.findByTeacher(currentTeacherId);
-            } else {
+
+            }
+            else if(currentUserRole == UserRole.Student){
+
+                list = classService.findByStudent(currentStudentId);
+
+            }
+            else{
+
                 list = classService.findAll();
+
             }
 
             tableModel.setData(list);
 
-            lblInfo.setText("Tổng số: " + list.size() + " lớp học");
+            lblInfo.setText("Tổng số: "+list.size()+" lớp học");
 
             table.clearSelection();
-
             selectedClass = null;
 
-        } catch (Exception ex){
+        }catch(Exception ex){
 
-            JOptionPane.showMessageDialog(this,"Lỗi tải dữ liệu: "+ex.getMessage());
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Lỗi tải dữ liệu: "+ex.getMessage()
+            );
 
         }
     }
@@ -192,10 +255,21 @@ public class ClassPanel extends JPanel {
         String kw = txtSearch.getText().trim().toLowerCase();
 
         List<TeachingClass> all;
-        if (currentTeacherId != null) {
+
+        if(currentUserRole == UserRole.Teacher){
+
             all = classService.findByTeacher(currentTeacherId);
-        } else {
+
+        }
+        else if(currentUserRole == UserRole.Student){
+
+            all = classService.findByStudent(currentStudentId);
+
+        }
+        else{
+
             all = classService.findAll();
+
         }
 
         List<TeachingClass> filtered = new ArrayList<>();
@@ -208,13 +282,11 @@ public class ClassPanel extends JPanel {
                 filtered.add(tc);
 
             }
-
         }
 
         tableModel.setData(filtered);
 
         lblInfo.setText("Tìm thấy: "+filtered.size()+" kết quả");
-
     }
 
     private void onTableSelection(){
@@ -222,15 +294,11 @@ public class ClassPanel extends JPanel {
         int row = table.getSelectedRow();
 
         if(row<0){
-
-            selectedClass=null;
-
+            selectedClass = null;
             return;
-
         }
 
         selectedClass = tableModel.getClassAt(row);
-
     }
 
     private void onAdd(){
@@ -252,26 +320,24 @@ public class ClassPanel extends JPanel {
 
                 classService.createClass(dialog.getResult());
 
-                loadTableAll();
+                loadTableData();
 
             }catch(Exception ex){
 
-                JOptionPane.showMessageDialog(this,"Lỗi thêm lớp: "+ex.getMessage());
-
+                JOptionPane.showMessageDialog(this,
+                        "Lỗi thêm lớp: "+ex.getMessage());
             }
-
         }
-
     }
 
     private void onEdit(){
 
         if(selectedClass==null){
 
-            JOptionPane.showMessageDialog(this,"Vui lòng chọn lớp để sửa");
+            JOptionPane.showMessageDialog(this,
+                    "Vui lòng chọn lớp để sửa");
 
             return;
-
         }
 
         ClassFormDialog dialog = new ClassFormDialog(
@@ -291,16 +357,14 @@ public class ClassPanel extends JPanel {
 
                 classService.updateClass(dialog.getResult());
 
-                loadTableAll();
+                loadTableData();
 
             }catch(Exception ex){
 
-                JOptionPane.showMessageDialog(this,"Lỗi cập nhật: "+ex.getMessage());
-
+                JOptionPane.showMessageDialog(this,
+                        "Lỗi cập nhật: "+ex.getMessage());
             }
-
         }
-
     }
 
     private void onDelete(){
@@ -320,16 +384,14 @@ public class ClassPanel extends JPanel {
 
                 classService.deleteClass(selectedClass.getId());
 
-                loadTableAll();
+                loadTableData();
 
             }catch(Exception ex){
 
-                JOptionPane.showMessageDialog(this,"Lỗi xóa: "+ex.getMessage());
-
+                JOptionPane.showMessageDialog(this,
+                        "Lỗi xóa: "+ex.getMessage());
             }
-
         }
-
     }
 
     private static class ClassTableModel extends AbstractTableModel {
@@ -347,37 +409,32 @@ public class ClassPanel extends JPanel {
 
         void setData(List<TeachingClass> data){
 
-            this.data=data;
+            this.data = data;
 
             fireTableDataChanged();
-
         }
 
         TeachingClass getClassAt(int r){
 
             return data.get(r);
-
         }
 
         @Override
         public int getRowCount(){
 
             return data.size();
-
         }
 
         @Override
         public int getColumnCount(){
 
             return columns.length;
-
         }
 
         @Override
         public String getColumnName(int c){
 
             return columns[c];
-
         }
 
         @Override
@@ -406,11 +463,7 @@ public class ClassPanel extends JPanel {
                 case 5 -> tc.getStatus();
 
                 default -> "";
-
             };
-
         }
-
     }
-
 }
