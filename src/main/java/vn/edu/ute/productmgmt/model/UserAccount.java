@@ -31,7 +31,8 @@ public class UserAccount {
     @JoinColumn(name = "student_id")
     private Student student;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    // Với Staff, ta load EAGER để tránh lỗi LazyInitialization khi dùng trong UI sau khi Session đã đóng
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "staff_id")
     private Staff staff;
 

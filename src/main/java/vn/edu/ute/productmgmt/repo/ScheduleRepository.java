@@ -13,6 +13,11 @@ public interface ScheduleRepository {
 
     List<Schedule> findAll(EntityManager em);
 
+    /**
+     * Tìm lịch học theo giáo viên (qua lớp học).
+     */
+    List<Schedule> findByTeacherId(EntityManager em, Long teacherId);
+
     Schedule findById(EntityManager em, Long id);
 
     void update(EntityManager em, Schedule schedule);

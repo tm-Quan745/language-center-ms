@@ -74,11 +74,12 @@ public class LcmsStaffPanel extends JPanel {
         txtSearch.setPreferredSize(new Dimension(300, 40));
         txtSearch.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Tìm tên hoặc số điện thoại nhân viên...");
         txtSearch.putClientProperty(FlatClientProperties.TEXT_FIELD_LEADING_ICON, new JLabel(" 🔍 "));
-        txtSearch.putClientProperty(FlatClientProperties.STYLE, "arc: 12");
+        // Giữ style đơn giản, tránh thuộc tính không hỗ trợ
+        txtSearch.putClientProperty(FlatClientProperties.STYLE, "arc:12");
 
         JButton btnSearch = new JButton("Tìm kiếm");
         btnSearch.setPreferredSize(new Dimension(100, 40));
-        btnSearch.putClientProperty(FlatClientProperties.STYLE, "background: #0d6efd; foreground: #ffffff; arc: 12");
+        btnSearch.putClientProperty(FlatClientProperties.STYLE, "background:#0d6efd;foreground:#ffffff;arc:12");
         btnSearch.addActionListener(e -> onSearch());
 
         left.add(txtSearch);
@@ -120,15 +121,16 @@ public class LcmsStaffPanel extends JPanel {
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         // Nếu là nút Sửa (vàng) thì chữ đen, còn lại chữ trắng
         String fg = colorHex.equals("#ffc107") ? "#000000" : "#ffffff";
+        // Bỏ outlineWidth vì FlatLaf đang dùng không hỗ trợ thuộc tính này
         btn.putClientProperty(FlatClientProperties.STYLE,
-                "background: " + colorHex + "; foreground: " + fg + "; arc: 12; borderWidth: 0; outlineWidth: 0");
+                "background:" + colorHex + ";foreground:" + fg + ";arc:12;borderWidth:0");
         return btn;
     }
 
     private JComponent buildTableArea() {
         JScrollPane scroll = new JScrollPane(table);
         scroll.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230)));
-        scroll.putClientProperty(FlatClientProperties.STYLE, "arc: 20");
+        // Một số phiên bản FlatLaf không hỗ trợ style 'arc' cho ScrollPane, nên bỏ để tránh lỗi
         return scroll;
     }
 

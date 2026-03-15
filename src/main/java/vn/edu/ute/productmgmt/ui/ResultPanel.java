@@ -4,6 +4,8 @@ import com.formdev.flatlaf.FlatClientProperties;
 import vn.edu.ute.productmgmt.model.Result;
 import vn.edu.ute.productmgmt.model.Student;
 import vn.edu.ute.productmgmt.model.TeachingClass;
+import vn.edu.ute.productmgmt.model.UserAccount;
+import vn.edu.ute.productmgmt.model.enums.UserRole;
 import vn.edu.ute.productmgmt.service.AttendanceService;
 import vn.edu.ute.productmgmt.service.ClassService;
 import vn.edu.ute.productmgmt.service.ResultService;
@@ -34,13 +36,21 @@ public class ResultPanel extends JPanel {
 
     private List<Student> students = new ArrayList<>();
     private Map<Long, Result> existingResultsByStudent = Map.of();
+    /** Nếu là giáo viên thì chỉ cho chọn lớp mà giáo viên đó phụ trách. */
+    private final Long currentTeacherId;
 
     public ResultPanel(ResultService resultService,
                        ClassService classService,
-                       AttendanceService attendanceService) {
+                       AttendanceService attendanceService,
+                       UserAccount currentUser) {
         this.resultService = resultService;
         this.classService = classService;
         this.attendanceService = attendanceService;
+
+        UserRole role = currentUser != null ? currentUser.getRole() : null;
+        this.currentTeacherId = (role == UserRole.Teacher && currentUser.getTeacher() != null)
+                ? currentUser.getTeacher().getId()
+                : null;
 
         setLayout(new BorderLayout(20, 20));
         setOpaque(false);
@@ -149,7 +159,9 @@ public class ResultPanel extends JPanel {
 
     private void loadClasses() {
         try {
-            List<TeachingClass> classes = classService.findAll();
+            List<TeachingClass> classes = (currentTeacherId != null)
+                    ? classService.findByTeacher(currentTeacherId)
+                    : classService.findAll();
             for (TeachingClass c : classes) {
                 cboClass.addItem(c);
             }

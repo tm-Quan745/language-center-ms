@@ -70,6 +70,21 @@ public class ScheduleService {
         }
     }
 
+    /**
+     * Lấy lịch học của các lớp do một giáo viên phụ trách.
+     */
+    public List<Schedule> findByTeacher(Long teacherId) {
+        if (teacherId == null) {
+            throw new IllegalArgumentException("teacherId không được null");
+        }
+        EntityManager em = Jpa.em();
+        try {
+            return scheduleRepo.findByTeacherId(em, teacherId);
+        } finally {
+            em.close();
+        }
+    }
+
     // =================================
     // FIND BY CLASS
     // =================================

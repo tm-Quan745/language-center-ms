@@ -2,6 +2,8 @@ package vn.edu.ute.productmgmt.ui;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import vn.edu.ute.productmgmt.model.Schedule;
+import vn.edu.ute.productmgmt.model.UserAccount;
+import vn.edu.ute.productmgmt.model.enums.UserRole;
 import vn.edu.ute.productmgmt.service.*;
 
 import javax.swing.*;
@@ -26,11 +28,21 @@ public class SchedulePanel extends JPanel {
     private final ScheduleTableModel tableModel = new ScheduleTableModel();
     private final JTable table = new JTable(tableModel);
     private Schedule selectedSchedule;
+    /** Nếu là giáo viên, chỉ xem lịch của các lớp do giáo viên này dạy. */
+    private final Long currentTeacherId;
+    private final UserRole currentUserRole;
 
-    public SchedulePanel(ScheduleService scheduleService, ClassService classService, RoomService roomService) {
+    public SchedulePanel(ScheduleService scheduleService,
+                         ClassService classService,
+                         RoomService roomService,
+                         UserAccount currentUser) {
         this.scheduleService = scheduleService;
         this.classService = classService;
         this.roomService = roomService;
+        this.currentUserRole = currentUser != null ? currentUser.getRole() : null;
+        this.currentTeacherId = (currentUserRole == UserRole.Teacher && currentUser.getTeacher() != null)
+                ? currentUser.getTeacher().getId()
+                : null;
 
         setLayout(new BorderLayout(20, 20));
         setOpaque(false);
@@ -101,9 +113,12 @@ public class SchedulePanel extends JPanel {
         btnRefresh.addActionListener(e -> loadTableAll());
 
         bar.add(btnRefresh);
-        bar.add(btnAdd);
-        bar.add(btnEdit);
-        bar.add(btnDelete);
+        // Giáo viên chỉ xem, không được thao tác CRUD lịch học
+        if (currentUserRole != UserRole.Teacher) {
+            bar.add(btnAdd);
+            bar.add(btnEdit);
+            bar.add(btnDelete);
+        }
 
         return bar;
     }
@@ -145,7 +160,9 @@ public class SchedulePanel extends JPanel {
 
         try {
 
-            List<Schedule> list = scheduleService.findAll();
+            List<Schedule> list = (currentTeacherId != null)
+                    ? scheduleService.findByTeacher(currentTeacherId)
+                    : scheduleService.findAll();
 
             tableModel.setData(list);
 
@@ -166,7 +183,9 @@ public class SchedulePanel extends JPanel {
 
         String kw = txtSearch.getText().trim().toLowerCase();
 
-        List<Schedule> all = scheduleService.findAll();
+        List<Schedule> all = (currentTeacherId != null)
+                ? scheduleService.findByTeacher(currentTeacherId)
+                : scheduleService.findAll();
 
         List<Schedule> filtered = all.stream()
                 .filter(s -> s.getTeachingClass().getClassName().toLowerCase().contains(kw))

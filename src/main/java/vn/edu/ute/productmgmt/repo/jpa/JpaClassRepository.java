@@ -32,6 +32,21 @@ public class JpaClassRepository implements ClassRepository {
     }
 
     @Override
+    public List<TeachingClass> findByTeacherId(EntityManager em, Long teacherId) {
+        return em.createQuery(
+                        "SELECT DISTINCT tc FROM TeachingClass tc " +
+                                "LEFT JOIN FETCH tc.course " +
+                                "LEFT JOIN FETCH tc.teacher " +
+                                "LEFT JOIN FETCH tc.room " +
+                                "LEFT JOIN FETCH tc.branch " +
+                                "WHERE tc.teacher.id = :teacherId",
+                        TeachingClass.class
+                )
+                .setParameter("teacherId", teacherId)
+                .getResultList();
+    }
+
+    @Override
     public List<TeachingClass> findByStatus(EntityManager em, String status) {
         return em.createQuery(
                         "SELECT tc FROM TeachingClass tc WHERE tc.status = :status",

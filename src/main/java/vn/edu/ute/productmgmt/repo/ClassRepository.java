@@ -14,6 +14,11 @@ public interface ClassRepository {
 
     List<TeachingClass> findAll(EntityManager em);
 
+    /**
+     * Tìm các lớp do một giáo viên phụ trách.
+     */
+    List<TeachingClass> findByTeacherId(EntityManager em, Long teacherId);
+
     List<TeachingClass> findByStatus(EntityManager em, String status);
 
     void update(EntityManager em, TeachingClass teachingClass);

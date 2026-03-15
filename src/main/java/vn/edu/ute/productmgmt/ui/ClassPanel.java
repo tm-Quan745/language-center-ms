@@ -2,6 +2,8 @@ package vn.edu.ute.productmgmt.ui;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import vn.edu.ute.productmgmt.model.TeachingClass;
+import vn.edu.ute.productmgmt.model.UserAccount;
+import vn.edu.ute.productmgmt.model.enums.UserRole;
 import vn.edu.ute.productmgmt.service.*;
 
 import javax.swing.*;
@@ -26,18 +28,26 @@ public class ClassPanel extends JPanel {
     private final JTable table = new JTable(tableModel);
 
     private TeachingClass selectedClass;
+    /** Nếu khác null và user là giáo viên thì chỉ hiển thị các lớp của giáo viên này. */
+    private final Long currentTeacherId;
+    private final UserRole currentUserRole;
 
     public ClassPanel(ClassService classService,
                       CourseService courseService,
                       TeacherService teacherService,
                       RoomService roomService,
-                      BranchService branchService) {
+                      BranchService branchService,
+                      UserAccount currentUser) {
 
         this.classService = classService;
         this.courseService = courseService;
         this.teacherService = teacherService;
         this.roomService = roomService;
         this.branchService = branchService;
+        this.currentUserRole = currentUser != null ? currentUser.getRole() : null;
+        this.currentTeacherId = (currentUserRole == UserRole.Teacher && currentUser.getTeacher() != null)
+                ? currentUser.getTeacher().getId()
+                : null;
 
         setLayout(new BorderLayout(20,20));
         setOpaque(false);
@@ -113,9 +123,12 @@ public class ClassPanel extends JPanel {
         btnRefresh.addActionListener(e -> loadTableAll());
 
         bar.add(btnRefresh);
-        bar.add(btnAdd);
-        bar.add(btnEdit);
-        bar.add(btnDelete);
+        // Giáo viên chỉ xem, không được thao tác CRUD lớp
+        if (currentUserRole != UserRole.Teacher) {
+            bar.add(btnAdd);
+            bar.add(btnEdit);
+            bar.add(btnDelete);
+        }
 
         return bar;
     }
@@ -151,7 +164,13 @@ public class ClassPanel extends JPanel {
 
         try {
 
-            List<TeachingClass> list = classService.findAll();
+            List<TeachingClass> list;
+            if (currentTeacherId != null) {
+                // Giáo viên: chỉ xem các lớp của mình
+                list = classService.findByTeacher(currentTeacherId);
+            } else {
+                list = classService.findAll();
+            }
 
             tableModel.setData(list);
 
@@ -172,7 +191,12 @@ public class ClassPanel extends JPanel {
 
         String kw = txtSearch.getText().trim().toLowerCase();
 
-        List<TeachingClass> all = classService.findAll();
+        List<TeachingClass> all;
+        if (currentTeacherId != null) {
+            all = classService.findByTeacher(currentTeacherId);
+        } else {
+            all = classService.findAll();
+        }
 
         List<TeachingClass> filtered = new ArrayList<>();
 

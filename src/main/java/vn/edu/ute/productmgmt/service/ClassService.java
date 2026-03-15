@@ -7,7 +7,6 @@ import vn.edu.ute.productmgmt.model.TeachingClass;
 import vn.edu.ute.productmgmt.repo.ClassRepository;
 
 import jakarta.persistence.EntityManager;
-import java.time.LocalDate;
 import java.util.List;
 
 public class ClassService {
@@ -74,6 +73,21 @@ public class ClassService {
         EntityManager em = Jpa.em();
         try {
             return classRepo.findAll(em);
+        } finally {
+            em.close();
+        }
+    }
+
+    /**
+     * Lấy danh sách lớp do một giáo viên phụ trách.
+     */
+    public List<TeachingClass> findByTeacher(Long teacherId) {
+        if (teacherId == null) {
+            throw new IllegalArgumentException("teacherId không được null");
+        }
+        EntityManager em = Jpa.em();
+        try {
+            return classRepo.findByTeacherId(em, teacherId);
         } finally {
             em.close();
         }

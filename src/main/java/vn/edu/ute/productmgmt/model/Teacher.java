@@ -2,6 +2,8 @@ package vn.edu.ute.productmgmt.model;
 
 import jakarta.persistence.*;
 import vn.edu.ute.productmgmt.model.enums.ActiveStatus;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 
@@ -31,6 +33,14 @@ public class Teacher {
 
     @Column(length = 20)
     private ActiveStatus status;
+
+    @Column(name = "created_at")
+    @CreationTimestamp
+    private LocalDate createdAt = LocalDate.now();
+
+    @Column(name = "updated_at")
+    @UpdateTimestamp
+    private LocalDate updatedAt = LocalDate.now();
 
     @Override
     public String toString() {

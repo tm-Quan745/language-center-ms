@@ -5,6 +5,7 @@ import com.formdev.flatlaf.themes.FlatMacLightLaf;
 import vn.edu.ute.productmgmt.db.TransactionManager;
 import vn.edu.ute.productmgmt.model.Notification;
 import vn.edu.ute.productmgmt.model.UserAccount;
+import vn.edu.ute.productmgmt.model.enums.StaffRole;
 import vn.edu.ute.productmgmt.model.enums.UserRole;
 import vn.edu.ute.productmgmt.repo.UserAccountRepository;
 import vn.edu.ute.productmgmt.repo.jpa.UserAccountRepositoryImpl;
@@ -68,6 +69,7 @@ public class LcmsMainFrame extends JFrame {
     private static final String CARD_PAYMENT = "Lịch sử Thanh toán";
     private static final String CARD_PROMOTION = "Chương trình Ưu đãi";
     private static final String CARD_NOTIFICATION = "Thông báo chung";
+    private static final String CARD_ACCOUNT = "Tạo tài khoản";
 
     public LcmsMainFrame(UserAccount user, CourseService courseService, RoomService roomService,
                          BranchService branchService, CertificateService certificateService,
@@ -272,18 +274,19 @@ public class LcmsMainFrame extends JFrame {
         contentPanel.add(new CoursePanel(courseService), CARD_COURSE);
         contentPanel.add(new RoomPanel(roomService, branchService), CARD_ROOM);
         contentPanel.add(new BranchPanel(branchService), CARD_BRANCH);
+        contentPanel.add(new UserAccountPanel(), CARD_ACCOUNT);
         contentPanel.add(new CertificatePanel(certificateService, studentService, classService), CARD_CERTIFICATE);
         contentPanel.add(new LcmsStaffPanel(staffService), CARD_STAFF);
-        contentPanel.add(new ClassPanel(classService, courseService, teacherService, roomService, branchService), CARD_CLASS);
-        contentPanel.add(new SchedulePanel(scheduleService, classService, roomService), CARD_SCHEDULE);
+        contentPanel.add(new ClassPanel(classService, courseService, teacherService, roomService, branchService, currentUser), CARD_CLASS);
+        contentPanel.add(new SchedulePanel(scheduleService, classService, roomService, currentUser), CARD_SCHEDULE);
         contentPanel.add(new EnrollmentPanel(enrollmentService, studentService, classService), CARD_ENROLLMENT);
         contentPanel.add(new PaymentPanel(paymentService, studentService, enrollmentService, invoiceService), CARD_PAYMENT);
         contentPanel.add(new PromotionPanel(promotionService), CARD_PROMOTION);
         contentPanel.add(new InvoicePanel(invoiceService, studentService, promotionService), CARD_INVOICE);
         contentPanel.add(new PlacementPanel(placementTestService, studentService), CARD_PLACEMENT);
         contentPanel.add(new NotificationPanel(notificationService), CARD_NOTIFICATION);
-        contentPanel.add(new AttendancePanel(attendanceService, classService), CARD_ATTENDANCE);
-        contentPanel.add(new ResultPanel(resultService, classService, attendanceService), CARD_RESULT);
+        contentPanel.add(new AttendancePanel(attendanceService, classService, currentUser), CARD_ATTENDANCE);
+        contentPanel.add(new ResultPanel(resultService, classService, attendanceService, currentUser), CARD_RESULT);
     }
 
     private DefaultMutableTreeNode buildMenuTree() {
@@ -291,6 +294,10 @@ public class LcmsMainFrame extends JFrame {
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("Root");
 
         UserRole role = currentUser.getRole();
+        StaffRole staffRole = null;
+        if (role == UserRole.Staff && currentUser.getStaff() != null) {
+            staffRole = currentUser.getStaff().getRole();
+        }
 
         /* ===================== ADMIN ===================== */
         if (role == UserRole.Admin) {
@@ -298,6 +305,7 @@ public class LcmsMainFrame extends JFrame {
             DefaultMutableTreeNode gAdmin = new DefaultMutableTreeNode("HỆ THỐNG");
             gAdmin.add(new DefaultMutableTreeNode(CARD_STAFF));
             gAdmin.add(new DefaultMutableTreeNode(CARD_BRANCH));
+            gAdmin.add(new DefaultMutableTreeNode(CARD_ACCOUNT));
             gAdmin.add(new DefaultMutableTreeNode(CARD_NOTIFICATION));
             root.add(gAdmin);
 
@@ -328,16 +336,28 @@ public class LcmsMainFrame extends JFrame {
         /* ===================== STAFF ===================== */
         if (role == UserRole.Staff) {
 
+            // Nhóm HỌC VIÊN
             DefaultMutableTreeNode gPeople = new DefaultMutableTreeNode("HỌC VIÊN");
             gPeople.add(new DefaultMutableTreeNode(CARD_STUDENT));
-            gPeople.add(new DefaultMutableTreeNode(CARD_ENROLLMENT));
-            gPeople.add(new DefaultMutableTreeNode(CARD_PLACEMENT));
+
+            if (staffRole == StaffRole.Consultant || staffRole == StaffRole.Manager || staffRole == StaffRole.Admin) {
+                gPeople.add(new DefaultMutableTreeNode(CARD_ENROLLMENT));   // Ghi danh
+                gPeople.add(new DefaultMutableTreeNode(CARD_PLACEMENT));    // Kiểm tra xếp lớp
+            }
+            if (staffRole == StaffRole.Manager || staffRole == StaffRole.Admin) {
+                gPeople.add(new DefaultMutableTreeNode(CARD_RESULT));       // Kết quả
+                gPeople.add(new DefaultMutableTreeNode(CARD_CERTIFICATE));  // Chứng chỉ
+            }
             root.add(gPeople);
 
-            DefaultMutableTreeNode gFinance = new DefaultMutableTreeNode("TÀI CHÍNH");
-            gFinance.add(new DefaultMutableTreeNode(CARD_INVOICE));
-            gFinance.add(new DefaultMutableTreeNode(CARD_PAYMENT));
-            root.add(gFinance);
+            // Nhóm TÀI CHÍNH
+            if (staffRole == StaffRole.Accountant || staffRole == StaffRole.Manager || staffRole == StaffRole.Admin) {
+                DefaultMutableTreeNode gFinance = new DefaultMutableTreeNode("TÀI CHÍNH");
+                gFinance.add(new DefaultMutableTreeNode(CARD_INVOICE));     // Hóa đơn
+                gFinance.add(new DefaultMutableTreeNode(CARD_PAYMENT));     // Thanh toán
+                gFinance.add(new DefaultMutableTreeNode(CARD_PROMOTION));   // Khuyến mãi
+                root.add(gFinance);
+            }
         }
 
         /* ===================== TEACHER ===================== */

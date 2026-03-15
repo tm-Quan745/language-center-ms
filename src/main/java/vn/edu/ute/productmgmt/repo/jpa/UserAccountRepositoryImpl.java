@@ -27,7 +27,10 @@ public class UserAccountRepositoryImpl implements UserAccountRepository {
     @Override
     public List<UserAccount> findAll(EntityManager em) {
         return em.createQuery(
-                "SELECT u FROM UserAccount u",
+                "SELECT u FROM UserAccount u " +
+                        "LEFT JOIN FETCH u.student " +
+                        "LEFT JOIN FETCH u.teacher " +
+                        "LEFT JOIN FETCH u.staff",
                 UserAccount.class
         ).getResultList();
     }
@@ -46,7 +49,8 @@ public class UserAccountRepositoryImpl implements UserAccountRepository {
     public void delete(EntityManager em, Long id) {
         UserAccount user = em.find(UserAccount.class, id);
         if (user != null) {
-            em.remove(user);
+            // Xóa mềm: đặt is_active = false, không remove bản ghi
+            user.setActive(false);
         }
     }
 }
