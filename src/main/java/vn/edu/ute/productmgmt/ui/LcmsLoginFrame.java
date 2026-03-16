@@ -171,14 +171,9 @@ public class LcmsLoginFrame extends JFrame {
         gbc.gridy = 4;
         rightPanel.add(btnLogin, gbc);
 
-        // Nút Đăng ký (Register)
-        JButton btnReg = new JButton("Bạn chưa có tài khoản? Đăng ký");
-        btnReg.setBorderPainted(false);
-        btnReg.setContentAreaFilled(false);
-        btnReg.setForeground(new Color(13, 110, 253));
-        btnReg.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        // (Register button removed) -- keep UI compact, only login is available
         gbc.gridy = 5; gbc.insets = new Insets(20, 0, 0, 0);
-        rightPanel.add(btnReg, gbc);
+        // rightPanel.add(btnReg, gbc); // Register button code removed
 
         mainPanel.add(leftPanel);
         mainPanel.add(rightPanel);
@@ -186,7 +181,6 @@ public class LcmsLoginFrame extends JFrame {
 
         // --- Xử lý Sự kiện ---
         btnLogin.addActionListener(e -> handleLogin());
-        btnReg.addActionListener(e -> showRegisterDialog());
         txtPassword.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -228,126 +222,5 @@ public class LcmsLoginFrame extends JFrame {
             btnLogin.setEnabled(true);
             btnLogin.setText("ĐĂNG NHẬP NGAY");
         }
-    }
-
-    private void showRegisterDialog() {
-
-        JDialog dialog = new JDialog(this, "Đăng ký tài khoản", true);
-        dialog.setSize(420, 380);
-        dialog.setLocationRelativeTo(this);
-
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(new EmptyBorder(20, 30, 20, 30));
-        panel.setBackground(Color.WHITE);
-
-        GridBagConstraints g = new GridBagConstraints();
-        g.fill = GridBagConstraints.HORIZONTAL;
-        g.insets = new Insets(10, 0, 10, 0);
-        g.gridx = 0;
-
-        JLabel title = new JLabel("TẠO TÀI KHOẢN MỚI");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        title.setHorizontalAlignment(SwingConstants.CENTER);
-
-        JTextField regUser = new JTextField();
-        regUser.setPreferredSize(new Dimension(0, 40));
-        regUser.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Tên đăng nhập");
-
-        JPasswordField regPass = new JPasswordField();
-        regPass.setPreferredSize(new Dimension(0, 40));
-        regPass.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Mật khẩu");
-
-        JPasswordField regConfirm = new JPasswordField();
-        regConfirm.setPreferredSize(new Dimension(0, 40));
-        regConfirm.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Xác nhận mật khẩu");
-
-        JComboBox<String> cboRole = new JComboBox<>(new String[]{
-                "STUDENT",
-                "TEACHER",
-                "STAFF"
-        });
-        cboRole.setPreferredSize(new Dimension(0, 40));
-
-        JButton btnSubmit = new JButton("ĐĂNG KÝ");
-        btnSubmit.setPreferredSize(new Dimension(0, 45));
-        btnSubmit.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-        btnSubmit.putClientProperty(
-                FlatClientProperties.STYLE,
-                "background:#198754;foreground:#fff;arc:10;borderWidth:0"
-        );
-
-        g.gridy = 0;
-        panel.add(title, g);
-
-        g.gridy = 1;
-        panel.add(regUser, g);
-
-        g.gridy = 2;
-        panel.add(regPass, g);
-
-        g.gridy = 3;
-        panel.add(regConfirm, g);
-
-        g.gridy = 4;
-        panel.add(cboRole, g);
-
-        g.gridy = 5;
-        g.insets = new Insets(20, 0, 0, 0);
-        panel.add(btnSubmit, g);
-
-        dialog.add(panel);
-
-        btnSubmit.addActionListener(e -> {
-
-            String username = regUser.getText().trim();
-            String password = new String(regPass.getPassword());
-            String confirm = new String(regConfirm.getPassword());
-            String role = (String) cboRole.getSelectedItem();
-
-            if (username.isEmpty() || password.isEmpty() || confirm.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog,
-                        "Vui lòng nhập đầy đủ thông tin!",
-                        "Thiếu dữ liệu",
-                        JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            if (!password.equals(confirm)) {
-                JOptionPane.showMessageDialog(dialog,
-                        "Mật khẩu xác nhận không khớp!",
-                        "Sai mật khẩu",
-                        JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            if (password.length() < 4) {
-                JOptionPane.showMessageDialog(dialog,
-                        "Mật khẩu phải ít nhất 4 ký tự!",
-                        "Mật khẩu yếu",
-                        JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            try {
-
-                authService.register(username, password, role);
-
-                JOptionPane.showMessageDialog(dialog,
-                        "Đăng ký thành công!\nBạn có thể đăng nhập ngay.");
-
-                dialog.dispose();
-
-            } catch (Exception ex) {
-
-                JOptionPane.showMessageDialog(dialog,
-                        "Không thể đăng ký: " + ex.getMessage(),
-                        "Lỗi",
-                        JOptionPane.ERROR_MESSAGE);
-            }
-
-        });
-
-        dialog.setVisible(true);
     }
 }

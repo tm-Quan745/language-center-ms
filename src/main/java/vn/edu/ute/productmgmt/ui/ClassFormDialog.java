@@ -51,14 +51,50 @@ public class ClassFormDialog extends JDialog {
         if (existing != null) {
             this.result = existing;
 
-            cboCourse.setSelectedItem(existing.getCourse());
-            cboTeacher.setSelectedItem(existing.getTeacher());
-            cboBranch.setSelectedItem(existing.getBranch());
+            // Fill dữ liệu: tìm item bằng ID thay vì dùng setSelectedItem()
+            if (existing.getCourse() != null) {
+                for (int i = 0; i < cboCourse.getItemCount(); i++) {
+                    Course c = cboCourse.getItemAt(i);
+                    if (c != null && c.getId().equals(existing.getCourse().getId())) {
+                        cboCourse.setSelectedIndex(i);
+                        break;
+                    }
+                }
+            }
+
+            if (existing.getTeacher() != null) {
+                for (int i = 0; i < cboTeacher.getItemCount(); i++) {
+                    Teacher t = cboTeacher.getItemAt(i);
+                    if (t != null && t.getId().equals(existing.getTeacher().getId())) {
+                        cboTeacher.setSelectedIndex(i);
+                        break;
+                    }
+                }
+            }
+
+            if (existing.getBranch() != null) {
+                for (int i = 0; i < cboBranch.getItemCount(); i++) {
+                    Branch b = cboBranch.getItemAt(i);
+                    if (b != null && b.getId().equals(existing.getBranch().getId())) {
+                        cboBranch.setSelectedIndex(i);
+                        break;
+                    }
+                }
+            }
 
             // LOAD ROOM ĐÚNG CHI NHÁNH
             if(existing.getBranch() != null){
                 loadRoomsByBranch(existing.getBranch());
-                cboRoom.setSelectedItem(existing.getRoom());
+                // Fill room bằng ID
+                if (existing.getRoom() != null) {
+                    for (int i = 0; i < cboRoom.getItemCount(); i++) {
+                        Room r = cboRoom.getItemAt(i);
+                        if (r != null && r.getId().equals(existing.getRoom().getId())) {
+                            cboRoom.setSelectedIndex(i);
+                            break;
+                        }
+                    }
+                }
             }
 
             txtMaxStudent.setText(String.valueOf(existing.getMaxStudent()));

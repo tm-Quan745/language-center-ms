@@ -234,6 +234,8 @@ public class SchedulePanel extends JPanel {
 
             tableModel.setData(allSchedules);
             lblInfo.setText("Tổng: "+allSchedules.size());
+            table.clearSelection();
+            selectedSchedule = null;
             return;
         }
 
@@ -249,6 +251,9 @@ public class SchedulePanel extends JPanel {
         tableModel.setData(filtered);
 
         lblInfo.setText("Tìm thấy: "+filtered.size());
+
+        table.clearSelection();
+        selectedSchedule = null;
     }
 
     // ===============================

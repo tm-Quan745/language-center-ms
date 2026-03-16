@@ -287,6 +287,9 @@ public class ClassPanel extends JPanel {
         tableModel.setData(filtered);
 
         lblInfo.setText("Tìm thấy: "+filtered.size()+" kết quả");
+
+        table.clearSelection();
+        selectedClass = null;
     }
 
     private void onTableSelection(){
@@ -467,3 +470,4 @@ public class ClassPanel extends JPanel {
         }
     }
 }
+

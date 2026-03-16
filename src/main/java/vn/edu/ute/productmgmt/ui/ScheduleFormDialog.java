@@ -37,8 +37,28 @@ public class ScheduleFormDialog extends JDialog {
 
         if (existing != null) {
             this.result = existing;
-            cboClass.setSelectedItem(existing.getTeachingClass());
-            cboRoom.setSelectedItem(existing.getRoom());
+
+            // Fill dữ liệu: tìm item bằng ID thay vì dùng setSelectedItem()
+            if (existing.getTeachingClass() != null) {
+                for (int i = 0; i < cboClass.getItemCount(); i++) {
+                    TeachingClass tc = cboClass.getItemAt(i);
+                    if (tc != null && tc.getId().equals(existing.getTeachingClass().getId())) {
+                        cboClass.setSelectedIndex(i);
+                        break;
+                    }
+                }
+            }
+
+            if (existing.getRoom() != null) {
+                for (int i = 0; i < cboRoom.getItemCount(); i++) {
+                    Room room = cboRoom.getItemAt(i);
+                    if (room != null && room.getId().equals(existing.getRoom().getId())) {
+                        cboRoom.setSelectedIndex(i);
+                        break;
+                    }
+                }
+            }
+
             txtDate.setText(existing.getStudyDate().toString());
             txtStart.setText(existing.getStartTime().toString());
             txtEnd.setText(existing.getEndTime().toString());
