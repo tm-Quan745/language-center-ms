@@ -52,6 +52,7 @@ public class LcmsMainFrame extends JFrame {
     private List<Notification> cachedNotifications = new ArrayList<>();
 
     // Menu Constants
+    private static final String CARD_DASHBOARD_ADMIN = "Dashboard quản trị";
     private static final String CARD_STUDENT = "Quản lý Học viên";
     private static final String CARD_TEACHER = "Quản lý Giáo viên";
     private static final String CARD_STAFF = "Nhân viên hệ thống";
@@ -269,6 +270,8 @@ public class LcmsMainFrame extends JFrame {
         contentPanel.setBorder(new EmptyBorder(25, 30, 30, 30));
 
         // Các Panel con (Giữ nguyên logic của bạn)
+        // Dashboard chỉ dùng cho Admin nhưng vẫn add ở đây, menu sẽ quyết định quyền truy cập
+        contentPanel.add(new AdminDashboardPanel(studentService, classService, invoiceService, paymentService, staffService, teacherService), CARD_DASHBOARD_ADMIN);
         contentPanel.add(new StudentPanel(studentService), CARD_STUDENT);
         contentPanel.add(new TeacherPanel(teacherService), CARD_TEACHER);
         contentPanel.add(new CoursePanel(courseService), CARD_COURSE);
@@ -315,6 +318,7 @@ public class LcmsMainFrame extends JFrame {
         if (role == UserRole.Admin) {
 
             DefaultMutableTreeNode gAdmin = new DefaultMutableTreeNode("HỆ THỐNG");
+            gAdmin.add(new DefaultMutableTreeNode(CARD_DASHBOARD_ADMIN));
             gAdmin.add(new DefaultMutableTreeNode(CARD_STAFF));
             gAdmin.add(new DefaultMutableTreeNode(CARD_BRANCH));
             gAdmin.add(new DefaultMutableTreeNode(CARD_ACCOUNT));
