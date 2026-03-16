@@ -13,9 +13,14 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class InvoicePanel extends JPanel {
 
@@ -30,6 +35,15 @@ public class InvoicePanel extends JPanel {
 
     private Invoice selectedInvoice;
 
+    // Formatter for displaying money in table
+    private static final NumberFormat MONEY_FMT;
+    static {
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols(new Locale("vi", "VN"));
+        DecimalFormat df = new DecimalFormat("#,##0.##", symbols);
+        df.setGroupingUsed(true);
+        df.setRoundingMode(RoundingMode.HALF_UP);
+        MONEY_FMT = df;
+    }
     public InvoicePanel(InvoiceService invoiceService,
                         StudentService studentService,
                         PromotionService promotionService) {
@@ -151,7 +165,7 @@ public class InvoicePanel extends JPanel {
         return scroll;
     }
 
-    private void loadTable(){
+    void loadTable(){
 
         try{
 

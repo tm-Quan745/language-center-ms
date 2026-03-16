@@ -8,6 +8,9 @@ import vn.edu.ute.productmgmt.model.Promotion;
 import vn.edu.ute.productmgmt.model.Student;
 import vn.edu.ute.productmgmt.model.enums.InvoiceStatus;
 import vn.edu.ute.productmgmt.repo.InvoiceRepository;
+import vn.edu.ute.productmgmt.repo.PaymentRepository;
+
+
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -18,10 +21,12 @@ public class InvoiceService {
     private final InvoiceRepository invoiceRepo;
     private final PromotionService promotionService;
     private final TransactionManager tx;
+    private final PaymentRepository paymentRepo;
 
-    public InvoiceService(InvoiceRepository invoiceRepo, PromotionService promotionService, TransactionManager tx) {
+    public InvoiceService(InvoiceRepository invoiceRepo, PromotionService promotionService, PaymentRepository paymentRepo,TransactionManager tx) {
         this.invoiceRepo = invoiceRepo;
         this.promotionService = promotionService;
+        this.paymentRepo = paymentRepo;
         this.tx = tx;
     }
 
@@ -165,6 +170,77 @@ public class InvoiceService {
             return null;
         });
     }
+
+    public BigDecimal getPaidAmount(Long invoiceId) {
+
+        EntityManager em = Jpa.em();
+
+        try {
+
+            Invoice invoice = invoiceRepo.findById(em, invoiceId);
+
+            if (invoice == null) return BigDecimal.ZERO;
+
+            BigDecimal paid = paymentRepo.sumCompletedPaymentsByInvoice(em, invoice);
+
+            return paid != null ? paid : BigDecimal.ZERO;
+
+        } finally {
+            em.close();
+        }
+    }
+
+    public BigDecimal getRemainingAmount(Long invoiceId) {
+
+        EntityManager em = Jpa.em();
+
+        try {
+
+            Invoice invoice = invoiceRepo.findById(em, invoiceId);
+
+            if (invoice == null) return BigDecimal.ZERO;
+
+            BigDecimal paid = paymentRepo.sumCompletedPaymentsByInvoice(em, invoice);
+
+            BigDecimal total = invoice.getTotalAmount();
+
+            return total.subtract(paid != null ? paid : BigDecimal.ZERO);
+
+        } finally {
+            em.close();
+        }
+    }
+
+    public void refreshInvoiceStatus(Long invoiceId) throws Exception {
+
+        tx.runInTransaction(em -> {
+
+            Invoice invoice = invoiceRepo.findById(em, invoiceId);
+
+            if (invoice == null) return null;
+
+            BigDecimal paid =
+                    paymentRepo.sumCompletedPaymentsByInvoice(em, invoice);
+
+            if (paid == null) paid = BigDecimal.ZERO;
+
+            if (paid.compareTo(invoice.getTotalAmount()) >= 0) {
+
+                invoice.setStatus(InvoiceStatus.Paid);
+
+            } else {
+
+                invoice.setStatus(InvoiceStatus.Issued);
+
+            }
+
+            em.merge(invoice);
+
+            return null;
+        });
+    }
+
+
 
     private void validate(Invoice inv) {
         if (inv == null) {

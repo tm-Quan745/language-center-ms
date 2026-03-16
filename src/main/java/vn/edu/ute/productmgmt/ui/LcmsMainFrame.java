@@ -280,9 +280,20 @@ public class LcmsMainFrame extends JFrame {
         contentPanel.add(new ClassPanel(classService, courseService, teacherService, roomService, branchService, currentUser), CARD_CLASS);
         contentPanel.add(new SchedulePanel(scheduleService, classService, roomService, currentUser), CARD_SCHEDULE);
         contentPanel.add(new EnrollmentPanel(enrollmentService, studentService, classService), CARD_ENROLLMENT);
-        contentPanel.add(new PaymentPanel(paymentService, studentService, enrollmentService, invoiceService), CARD_PAYMENT);
+
+        // Create PaymentPanel and InvoicePanel
+        PaymentPanel paymentPanel = new PaymentPanel(paymentService, studentService, enrollmentService, invoiceService);
+        InvoicePanel invoicePanel = new InvoicePanel(invoiceService, studentService, promotionService);
+
+        // Add listener so InvoicePanel refreshes when Payment changes
+        paymentPanel.addPropertyChangeListener("invoicesChanged", evt -> {
+            invoicePanel.loadTable();
+        });
+
+        contentPanel.add(paymentPanel, CARD_PAYMENT);
         contentPanel.add(new PromotionPanel(promotionService), CARD_PROMOTION);
-        contentPanel.add(new InvoicePanel(invoiceService, studentService, promotionService), CARD_INVOICE);
+        contentPanel.add(invoicePanel, CARD_INVOICE);
+
         contentPanel.add(new PlacementPanel(placementTestService, studentService), CARD_PLACEMENT);
         contentPanel.add(new NotificationPanel(notificationService), CARD_NOTIFICATION);
         contentPanel.add(new AttendancePanel(attendanceService, classService, currentUser), CARD_ATTENDANCE);
@@ -452,3 +463,4 @@ public class LcmsMainFrame extends JFrame {
         popup.setVisible(true);
     }
 }
+

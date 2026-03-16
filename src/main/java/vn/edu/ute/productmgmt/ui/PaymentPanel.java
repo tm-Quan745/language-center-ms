@@ -14,11 +14,16 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class PaymentPanel extends JPanel {
 
@@ -37,6 +42,16 @@ public class PaymentPanel extends JPanel {
 
     private static final DateTimeFormatter DATE_TIME_FMT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+    // Formatter for displaying money in table
+    private static final NumberFormat MONEY_FMT;
+    static {
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols(new Locale("vi", "VN"));
+        DecimalFormat df = new DecimalFormat("#,##0.##", symbols);
+        df.setGroupingUsed(true);
+        df.setRoundingMode(RoundingMode.HALF_UP);
+        MONEY_FMT = df;
+    }
 
     public PaymentPanel(PaymentService paymentService,
                         StudentService studentService,
@@ -264,7 +279,7 @@ public class PaymentPanel extends JPanel {
             Long enrollmentId = parseLongOrNull(data.getEnrollmentId());
             Long invoiceId = parseLongOrNull(data.getInvoiceId());
 
-            BigDecimal amount = new BigDecimal(data.getAmount().trim());
+            BigDecimal amount = parseAmount(data.getAmount());
 
             LocalDateTime paymentDate = parsePaymentDate(data.getPaymentDate());
 
@@ -278,6 +293,9 @@ public class PaymentPanel extends JPanel {
                     data.getStatus(),
                     data.getReferenceCode()
             );
+
+            // Notify listeners (e.g., InvoicePanel) to refresh
+            firePropertyChange("invoicesChanged", false, true);
 
             JOptionPane.showMessageDialog(this,"Đã thêm thanh toán");
 
@@ -325,7 +343,7 @@ public class PaymentPanel extends JPanel {
             Long enrollmentId = parseLongOrNull(data.getEnrollmentId());
             Long invoiceId = parseLongOrNull(data.getInvoiceId());
 
-            BigDecimal amount = new BigDecimal(data.getAmount().trim());
+            BigDecimal amount = parseAmount(data.getAmount());
 
             LocalDateTime paymentDate = parsePaymentDate(data.getPaymentDate());
 
@@ -340,6 +358,9 @@ public class PaymentPanel extends JPanel {
                     data.getStatus(),
                     data.getReferenceCode()
             );
+
+            // Notify listeners (e.g., InvoicePanel) to refresh
+            firePropertyChange("invoicesChanged", false, true);
 
             JOptionPane.showMessageDialog(this,"Đã cập nhật thanh toán");
 
@@ -375,6 +396,9 @@ public class PaymentPanel extends JPanel {
         try{
 
             paymentService.delete(selectedPayment.getId());
+
+            // Notify listeners (e.g., InvoicePanel) to refresh
+            firePropertyChange("invoicesChanged", false, true);
 
             JOptionPane.showMessageDialog(this,"Đã xóa thanh toán");
 
@@ -473,6 +497,48 @@ public class PaymentPanel extends JPanel {
 
     }
 
+    private BigDecimal parseAmount(String value) {
+
+        if(value==null || value.trim().isEmpty()){
+            throw new IllegalArgumentException("Số tiền không được để trống");
+        }
+
+        String s = value.trim();
+
+        // remove spaces
+        s = s.replace(" ", "");
+
+        long dotCount = s.chars().filter(ch -> ch == '.').count();
+        long commaCount = s.chars().filter(ch -> ch == ',').count();
+
+        // handle common grouping formats:
+        if (dotCount > 1 && commaCount == 0) {
+            // likely "1.000.000" -> remove dots as grouping
+            s = s.replace(".", "");
+        } else if (commaCount > 1 && dotCount == 0) {
+            // likely "1,000,000" -> remove commas as grouping
+            s = s.replace(",", "");
+        } else {
+            // remove common grouping commas, keep single dot as decimal if present
+            s = s.replace(",", "");
+        }
+
+        // validate remaining string (allow optional leading -, digits, optional decimal part)
+        if(!s.matches("^-?\\d+(\\.\\d+)?$")){
+            throw new IllegalArgumentException("Số tiền không hợp lệ: " + value);
+        }
+
+        try{
+            BigDecimal bd = new BigDecimal(s);
+            if(bd.compareTo(BigDecimal.ZERO) < 0){
+                throw new IllegalArgumentException("Số tiền phải lớn hơn hoặc bằng 0");
+            }
+            return bd;
+        }catch(NumberFormatException ex){
+            throw new IllegalArgumentException("Số tiền không hợp lệ: " + value);
+        }
+    }
+
     private static class PaymentTableModel extends AbstractTableModel {
 
         private final String[] columns = {
@@ -542,7 +608,7 @@ public class PaymentPanel extends JPanel {
                         : "";
 
                 case 4 -> p.getAmount()!=null
-                        ? p.getAmount().toPlainString()
+                        ? MONEY_FMT.format(p.getAmount())
                         : "";
 
                 case 5 -> p.getPaymentDate()!=null

@@ -108,7 +108,7 @@ public class App {
        StaffService staffService = new StaffService(staffRepo, tx);
        PaymentService paymentService = new PaymentService(paymentRepo, tx);
        PromotionService promotionService = new PromotionService(promotionRepo, tx);
-       InvoiceService invoiceService = new InvoiceService(invoiceRepo, promotionService, tx);
+       InvoiceService invoiceService = new InvoiceService(invoiceRepo, promotionService, paymentRepo,tx);
        PlacementTestService placementTestService = new PlacementTestService(placementTestRepo, tx);
        NotificationService notificationService = new NotificationService(notificationRepo, tx);
 

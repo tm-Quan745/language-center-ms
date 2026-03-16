@@ -1,8 +1,11 @@
 package vn.edu.ute.productmgmt.repo;
 
 import jakarta.persistence.EntityManager;
+import vn.edu.ute.productmgmt.model.Invoice;
 import vn.edu.ute.productmgmt.model.Payment;
+import vn.edu.ute.productmgmt.model.enums.PaymentStatus;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface PaymentRepository {
@@ -16,5 +19,9 @@ public interface PaymentRepository {
     Payment findById(EntityManager em, Long id);
 
     List<Payment> findAll(EntityManager em);
+
+    List<Payment> findByInvoiceAndStatus(EntityManager em, Invoice invoice, PaymentStatus status);
+
+    BigDecimal sumCompletedPaymentsByInvoice(EntityManager em, Invoice invoice);
 }
 
